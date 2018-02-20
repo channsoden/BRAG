@@ -15,6 +15,7 @@ ln -s ../BRAG_parsers.py
 ln -s ../hannsoden-bioinformatics/fasta_tools.py
 ln -s ../hannsoden-bioinformatics/gff_tools.py
 ln -s ../hannsoden-bioinformatics/plots.py
+ln -s ../hannsoden-bioinformatics/sakakibara_tools.py
 
 # Generate extra tracks of data
 python2 extra_tracks.py
