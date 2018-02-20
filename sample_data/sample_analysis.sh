@@ -11,7 +11,7 @@ ln -s hannsoden-bioinformatics/fasta_tools.py
 ln -s hannsoden-bioinformatics/sakakibara_tools.py
 ln -s hannsoden-bioinformatics/gff_tools.py
 cd sample_data
-ln -s ../hannsoden-bioinformatics/BRAG_parsers.py
+ln -s ../BRAG_parsers.py
 ln -s ../hannsoden-bioinformatics/fasta_tools.py
 ln -s ../hannsoden-bioinformatics/gff_tools.py
 ln -s ../hannsoden-bioinformatics/plots.py
