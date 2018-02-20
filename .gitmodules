@@ -1,0 +1,3 @@
+[submodule "hannsoden-bioinformatics"]
+	path = hannsoden-bioinformatics
+	url = https://github.com/channsoden/hannsoden-bioinformatics
