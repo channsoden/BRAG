@@ -1,4 +1,4 @@
-# BRAG
+# BRAG [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/channsoden/BRAG/master)
 
 Break Rates Across the Genome (BRAG) is a program to estimate the rearrangement break rate at all sites of a genome, given a tree of relatives and pairwise alignments between the genome of interest (the reference) and all other leaves in the tree.
 
@@ -67,5 +67,7 @@ bash sample_analysis.sh
 ```
 
 This analysis can be run on MyBinder.org from your browser at the following link:
+
+https://mybinder.org/v2/gh/channsoden/BRAG/master
 
 
