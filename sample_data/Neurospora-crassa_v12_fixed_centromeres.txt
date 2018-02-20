@@ -1,0 +1,9 @@
+# scaffold_index  start stop
+0               3733000 3986000 # only high CenH3 region on LG I
+0               3594000 4100000 # w/ low CenH3 periphery on LG I
+1               1065000 1367000
+2               680000  970000
+3               870000  1173000
+4               888000  1233000
+5               2757000 3082000
+6               2069000 2536000

@@ -1,0 +1,117 @@
+#!/usr/bin/env python
+"""
+Break Rates Across the Genome (BRAG) is a program to estimate the rearrangement
+break rate at all sites of a genome, given a tree of relatives and pairwise
+alignments between the genome of interest (the reference) and all other leaves
+in the tree.
+"""
+
+"""
+Mandatory Arguments
+--tree
+Newick formatted phylogenetic tree should have the reference and all other genomes
+to be compared, and only the other genomes to be compared, including one outgroup.
+
+--reference
+The name of the reference, as labelled in the tree.
+
+--outgroup
+The name of the outgroup, as labelled in the tree.
+
+--segment_files
+List (separated by spaces) of OSFinder-formatted pairwise alignments between the
+reference and all queries in the tree.
+
+--seqs_files
+List (separated by spaces) of files containing the paths to the genomes used in
+each pairwise alignment (segment_files), as produced by Murasaki. These files
+should be in the same order as the alignments. Each should have two lines. The
+first line should be the path to the fasta-formatted genome that appears first in
+the corresponding alignment (lefthand columns). The second line should be the path
+to the fasta-formatted genome that appears second in the corresponding alignment
+(righthand columns). The seqs file names should match the following pattern:
+
+PREFIX.SHORTNAME1.SHORTNAME2.*
+
+Where PREFIX, SHORTNAME1, and SHORTNAME2 do not contain any "." characters, and
+SHORTNAME1 AND SHORTNAME2 are identifiers for the reference and a query, one of
+which should match the --reference option. The * can represent any or no string,
+including "." characters.
+
+Optional Arguments
+--output
+A name to be used as a prefix for output files. Default "rearrangement_analysis".
+
+--centromeres
+A tab separated table of centromere coordinates. There should be 3 columns.
+1. The index of the scaffold, starting with 0, in the order of the sequences
+   in the reference genome.
+2. The start coordinate of the centromere on that scaffold.
+3. The stop coordinate of the centromere on that scaffold.
+Comments after "#" will be ignored.
+
+--tracks
+A tab separated table of extra data tracks to plot along the reference genome,
+and with which to perform simple linear regression against the break rate.The
+first line should be a header containing column labels. There should be 2 columns
+labeled 'start' and 'end', which contain the start and end coordinates of windows
+along the reference genome using a half-closed interval: [start, end). The window
+size and step of these windows should match the window size and step arguments
+given to BRAG.
+E.G. with the default window size of 35kbp and a 7kbp step:
+start	end	GC
+0	35000	0.4301714286
+7000	42000	0.4380285714
+14000	49000	0.4396571429
+21000	56000	0.4472857143
+Missing data can be left blank.
+
+--step
+The step size for sliding window analysis (AKA rectangular smoothing).
+
+--window_size
+The window size for sliding window analysis (AKA rectangular smoothing).
+
+--nthreads
+The number of threads to use for some steps. Default 1.
+"""
+
+__author__ = "Christopher Hann-Soden"
+__copyright__ = "Copyright 2018, Christopher Hann-Soden"
+__credits__ = ["Christopher Hann-Soden"]
+__licence__ = "BSD"
+__version__ = "0.8"
+__maintainer__ = "Christopher Hann-Soden"
+__email__ = "channsoden@gmail.com"
+__status__ = "Development"
+
+# Dependencies
+# Nonstandard modules: pandas, numpy, scipy, statsmodels, ete3
+# Modules from github.com/channsoden/hannsoden-bioinformatics: processing_tools, plots, tree_tools, fasta_tools, sakakibara_tools
+
+import argparse
+from BRAG_main import *
+
+def parse_args():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-t', '--tree', type=str, required=True, help='Newick formatted phylogenetic tree')
+    parser.add_argument('-r', '--reference', type=str, required=True, help='Name or abbreviation of genome to use as reference.')
+    parser.add_argument('-x', '--outgroup', type=str, required=True, help='Genome to be used as outgroup for rooting')
+    parser.add_argument('-o', '--output', type=str, default='rearrangement_analysis', help='Name stub for output files')
+    parser.add_argument('-g', '--segment_files', type=str, nargs='+', help='Pairwise OSFinder alignments to reference')
+    parser.add_argument('-q', '--seqs_files', type=str, nargs='+', help='Murasaki generated .seqs files, in same order as --segments')
+    parser.add_argument('-C', '--centromeres', type=str, help='Tab separated table of scaffold indexes, start, and end coordinates of centromeres')
+    parser.add_argument('-T', '--tracks', type=str, help='Tab separated table of extra data tracks with matching window size & step to BRAG')
+    parser.add_argument('-S', '--step', type=int, default = 7000, help='Step size for sliding window analysis (rectangular smoothing)')
+    parser.add_argument('-W', '--window_size', type=int, default = 35000, help='Window size for sliding window analysis (rectangular smoothing)')
+    parser.add_argument('-n', '--nthreads', type=int, default=1, help='Number of threads to use')
+    args = parser.parse_args()
+
+    if len(args.seqs_files) != len(args.segment_files):
+        raise Exception, "There should be a 1:1 correlation between .seqs files (-q) and OS finder alignments (-g)."
+
+    return args
+
+if __name__ == '__main__':
+    args = parse_args()
+    main(**vars(args))
