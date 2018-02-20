@@ -60,15 +60,15 @@ def gene_density(annotation, window):
     overlap = np.sum(ends - starts)
     return overlap / window_size
 
-genome_file = '/global/home/users/hannsode/genomes/Neurospora-crassa_OR74A_v12_fixed.fasta'
+genome_file = 'genomes/Neurospora-crassa_OR74A_v12_fixed.fasta'
 fasta = open(genome_file, 'r').read()
 scaffolds = fasta[1:].split('>')
 scaffolds = [s.split('\n', 1) for s in scaffolds]
 scaffolds = [s[1].replace('\n', '') for s in scaffolds]
 genome = ''.join(scaffolds)
 
-annotation = gff_table('/global/home/users/hannsode/genomes/annotations/Neurospora_crassa_OR74A_v12_fixed.gtf')
-scaffolds = scaffold_table('/global/home/users/hannsode/genomes/Neurospora-crassa_OR74A_v12_fixed.fasta')
+annotation = gff_table('genomes/annotations/Neurospora_crassa_OR74A_v12_fixed.gtf')
+scaffolds = scaffold_table('genomes/Neurospora-crassa_OR74A_v12_fixed.fasta')
 abs_positions = {row['name']: row.abs_pos for i, row in scaffolds.iterrows()}
 scaf_adjustment = annotation.seqname.replace(abs_positions)
 annotation['abs_start'] = annotation.start + scaf_adjustment

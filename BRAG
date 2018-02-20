@@ -79,7 +79,7 @@ The number of threads to use for some steps. Default 1.
 __author__ = "Christopher Hann-Soden"
 __copyright__ = "Copyright 2018, Christopher Hann-Soden"
 __credits__ = ["Christopher Hann-Soden"]
-__licence__ = "BSD"
+__licence__ = "BSD 2-clause"
 __version__ = "0.8"
 __maintainer__ = "Christopher Hann-Soden"
 __email__ = "channsoden@gmail.com"
