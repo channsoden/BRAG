@@ -3,3 +3,4 @@ pandas
 scipy
 statsmodels
 ete3
+matplotlib
