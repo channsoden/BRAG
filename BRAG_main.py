@@ -77,7 +77,7 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
         certain_estimates = pd.read_csv('certain_breakrate_rates.tab', sep='\t')
     log.write(open('certain_breakrate.log', 'r').read())
 
-    if not os.path.isfile('uncertain_rate_windows.panda'):
+    if not os.path.isfile('uncertain_rate_windows.txt'):
         uncertain_rate_windows = rate_windows(uncertain_estimates, N, step=step, window_size=window_size)
         uncertain_rate_windows.to_csv('uncertain_rate_windows.txt', sep='\t', index=False)
     else:
