@@ -10,11 +10,13 @@ ln -s hannsoden-bioinformatics/tree_tools.py
 ln -s hannsoden-bioinformatics/fasta_tools.py
 ln -s hannsoden-bioinformatics/sakakibara_tools.py
 ln -s hannsoden-bioinformatics/gff_tools.py
+ln -s hannsoden-bioinformatics/plotting_tools.py
 cd sample_data
 ln -s ../BRAG_parsers.py
 ln -s ../hannsoden-bioinformatics/fasta_tools.py
 ln -s ../hannsoden-bioinformatics/gff_tools.py
 ln -s ../hannsoden-bioinformatics/plots.py
+ln -s ../hannsoden-bioinformatics/plotting_tools.py
 ln -s ../hannsoden-bioinformatics/sakakibara_tools.py
 
 # Generate extra tracks of data
