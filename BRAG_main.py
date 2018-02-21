@@ -79,15 +79,15 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
 
     if not os.path.isfile('uncertain_rate_windows.panda'):
         uncertain_rate_windows = rate_windows(uncertain_estimates, N, step=step, window_size=window_size)
-        uncertain_rate_windows.to_pickle('uncertain_rate_windows.panda')
+        uncertain_rate_windows.to_csv('uncertain_rate_windows.txt', sep='\t', index=False)
     else:
-        uncertain_rate_windows = pd.read_pickle('uncertain_rate_windows.panda')
+        uncertain_rate_windows = pd.read_csv('uncertain_rate_windows.txt', sep='\t', header=0)
 
-    if not os.path.isfile('certain_rate_windows.panda'):
+    if not os.path.isfile('certain_rate_windows.txt'):
         certain_rate_windows = rate_windows(certain_estimates, N, step=step, window_size=window_size)
-        certain_rate_windows.to_pickle('certain_rate_windows.panda')
+        certain_rate_windows.to_csv('certain_rate_windows.txt', sep='\t', index=False)
     else:
-        certain_rate_windows = pd.read_pickle('certain_rate_windows.panda')
+        certain_rate_windows = pd.read_csv('certain_rate_windows.txt', sep='\t', header=0)
 
     # Mask Centromeres
     if centromeres:
@@ -121,7 +121,10 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     print 'Plotting break rates calculated with "True" qbreaks ("certain", lower bound estimate)'
     print 'against break rates calculated with "True" and "False" break rates ("uncertain:, upper bound estimate).'
     print output+'.uncertainty.png'
-    correlation_scatter(certain_rate_windows['E'], uncertain_rate_windows['E'], output+'.uncertainty.png')
+    indexer = certain_rate_windows['E'] != uncertain_rate_windows['E']
+    correlation_scatter(certain_rate_windows['E'].loc[indexer],
+                        uncertain_rate_windows['E'].loc[indexer],
+                        output+'.uncertainty.png')
 
     if track_labels:
         print
