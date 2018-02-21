@@ -6,6 +6,8 @@ import numpy as np
 from scipy.stats import expon
 import statsmodels.api as sm
 import statsmodels.stats.multitest as smm
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 from matplotlib import patches, gridspec, colors
