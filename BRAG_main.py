@@ -43,7 +43,7 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     log.write('Maximum coverage:\t{}\n'.format(coverage_stats.minmax[1]))
     log.write('SD coverage:\t{}\n'.format(coverage_stats.variance ** 0.5))
     log.write('Cumulative coverage:\t{}\n\n'.format(cumulative_coverage(os_tabs, N)))
-    degrading_coverage(coverages, os_tabs, N, 'coverage_survival_curve.tif')
+    degrading_coverage(coverages, os_tabs, N, 'coverage_survival_curve.png')
 
     hist_jobs = [(OS_length_hist, (reference, query, os_tab)) for query, rscaffolds, qscaffolds, os_tab in tables]
     mapPool(20, hist_jobs)
