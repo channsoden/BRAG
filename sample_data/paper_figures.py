@@ -135,10 +135,12 @@ def parse_core_genes(gene_table, key_file):
     gene_table.coreness.replace(ranks, inplace=True)
     gene_table.ID30.replace(better_labels, inplace=True)
     gene_table.sort_values('coreness', inplace=True)
+
     return gene_table
 
 def core_enrichment(ax, genes, core_genes, title=None, shift=0, color='gray'):
     core_genes_present = core_genes.loc[core_genes.Broad7_geneID.isin(genes)]
+
     category_counts = {}
     label_order = []
     for i, row in core_genes_present.iterrows():
@@ -166,6 +168,16 @@ ax.set_xticks([i+0.2 for i in range(5)])
 ax.legend((lowbars, highbars), ('Conserved Regions', 'Fragile Regions'))
 ax.set_ylabel('Genes')
 fig.savefig('core_gene_content.png', bbox_inches='tight', dpi=200)
+
+core_genes_in_category = {}
+for i, row in core_genes.iterrows():
+    try:
+        core_genes_in_category[row.ID30] += 1
+    except KeyError:
+        core_genes_in_category[row.ID30] = 1
+print '{} genes have a published phylogenetic distribution'.format(sum(core_genes_in_category.values()))
+for category, number in core_genes_in_category.items():
+    print '{}\t{}'.format(number, category)
 
 print '{} / {} genes in conserved regions have published phylogenetic distribution'.format(sum(lowcore.values()), len(low_geneIDs))
 print '{} / {} genes in fragile regions have published phylogenetic distribution'.format(sum(highcore.values()), len(high_geneIDs))
