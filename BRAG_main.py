@@ -27,7 +27,7 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     reference_genome_file = infer_reference(seqs_files)
     table_jobs = [(segment_tables, (reference, segment_file, seqs_file, reference_genome_file))
                   for segment_file, seqs_file in zip(segment_files, seqs_files)]
-    tables = mapPool(20, table_jobs)
+    tables = mapPool(nthreads, table_jobs)
 
     order = tree_order(reference, tree)
     tables.sort(key=lambda t: order.index(t[0])) # sort by queries into order
@@ -46,7 +46,7 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     degrading_coverage(coverages, os_tabs, N, 'coverage_survival_curve.png')
 
     hist_jobs = [(OS_length_hist, (reference, query, os_tab)) for query, rscaffolds, qscaffolds, os_tab in tables]
-    mapPool(20, hist_jobs)
+    mapPool(nthreads, hist_jobs)
 
     log.write('\nEstimating break rates. . .\n\n')
     if not (os.path.isfile('uncertain_breakrate_rates.tab') and
@@ -54,7 +54,7 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
             os.path.isfile('uncertain_breakrate.log') and
             os.path.isfile('certain_breakrate.log')):
         adj_jobs = [(map_breakpoints, [os_tab]) for os_tab in os_tabs]
-        uncertain_adj_coords = mapPool(20, adj_jobs)
+        uncertain_adj_coords = mapPool(nthreads, adj_jobs)
         certain_adj_coords = [[coord for coord in coords if coord[2]] for coords in uncertain_adj_coords]
         uncertain_adj_coords = zip(queries, uncertain_adj_coords)
         certain_adj_coords = zip(queries, certain_adj_coords)

@@ -3,7 +3,6 @@
 
 # Nonstandard modules
 import numpy as np
-from scipy.stats import expon
 import statsmodels.api as sm
 import statsmodels.stats.multitest as smm
 import matplotlib
@@ -37,10 +36,7 @@ def OS_length_hist(reference, query, os_tab):
 
 def my_hist(ax, series):
     bins = np.logspace(1, np.log10(series.max()), num=50)
-    loc, scale = expon.fit(series)
     values, bins, patches = ax.hist(series, bins=bins, normed=True, color='grey', edgecolor='none')
-    regression = expon.pdf(bins, loc=loc, scale=scale)
-    ax.plot(bins, regression, '-k')
     ax.set_xlim(series.min(), series.max())
     ax.set_xscale('log')
 
@@ -185,7 +181,7 @@ def rate_plot(ax, rate_estimates, rate_windows, N, step=7000, label=''):
 
     legend = label.replace('\n', '')+'.legend.png'
     legendfig = plt.figure()
-    legend_ax = plt.add_subplot(111)
+    legend_ax = fig.add_subplot(111)
     legendfig.colorbar(heatmap, ax=ax)
     legendfig.savefig(legend, bbox_inches='tight', dpi=200)
     
