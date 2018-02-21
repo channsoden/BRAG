@@ -86,7 +86,7 @@ __email__ = "channsoden@gmail.com"
 __status__ = "Development"
 
 # Dependencies
-# Nonstandard modules: pandas, numpy, scipy, statsmodels, ete3
+# Nonstandard modules: pandas, numpy, scipy, statsmodels, ete3, biopython, matplotlib
 # Modules from github.com/channsoden/hannsoden-bioinformatics: processing_tools, plots, tree_tools, fasta_tools, sakakibara_tools
 
 import argparse
