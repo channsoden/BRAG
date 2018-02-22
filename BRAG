@@ -108,7 +108,7 @@ def parse_args():
     args = parser.parse_args()
 
     if len(args.seqs_files) != len(args.segment_files):
-        raise Exception, "There should be a 1:1 correlation between .seqs files (-q) and OS finder alignments (-g)."
+        raise Exception("There should be a 1:1 correlation between .seqs files (-q) and OS finder alignments (-g).")
 
     return args
 
