@@ -2,7 +2,7 @@
 wget -O genomes.tar.gz https://osf.io/vmkc8/?action=download
 tar -xzf genomes.tar.gz
 
-PYTHONPATH=$PYTHONPATH:../hannsoden-bioinformatics:..
+export PYTHONPATH=$PYTHONPATH:../hannsoden-bioinformatics:..
 
 echo "Generating extra tracks of data"
 python extra_tracks.py
