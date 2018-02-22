@@ -5,3 +5,4 @@ statsmodels
 ete3
 matplotlib
 biopython
+guppy
