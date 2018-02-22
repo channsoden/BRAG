@@ -42,8 +42,8 @@ def my_hist(ax, series):
 
 ### Plot of global reference coverage by number of queries
 def degrading_coverage(coverages, os_tabs, N, output):
-    coverages, os_tabs = zip(*sorted(zip(coverages, os_tabs), reverse=True))
-    queries = range(len(os_tabs))
+    coverages, os_tabs = list(zip(*sorted(zip(coverages, os_tabs), reverse=True)))
+    queries = list(range(len(os_tabs)))
 
     endlist = []
     for query, os_tab in enumerate(os_tabs):
@@ -120,7 +120,7 @@ def plot_break_rate(N, queries, os_tabs,
     
     minimal(ax, labels=True)
     
-    ax.set_yticks(range(0, len(os_tabs)+1))
+    ax.set_yticks(list(range(0, len(os_tabs)+1)))
     ax.set_yticklabels([''] + list(queries))
     ax.set_ylim(-.6, len(os_tabs)+.6)
     
@@ -234,7 +234,7 @@ def track_correlation(rate_windows, tracks, track_labels, outfile):
     X = sm.add_constant(tracks[track_labels]) # allow for intercept
     model = sm.OLS(rate_windows.E, X, missing='drop')
     results = model.fit()
-    print results.summary()
+    print(results.summary())
 
     # Modeling each track with linear regression (simple, but most wrong).
     tests = []

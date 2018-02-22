@@ -10,7 +10,7 @@ def composite_poisson_likelihood(counts, likelihoods, times, rates):
     # and uncertainty about the amount of time observed.
     if (len(counts) != len(likelihoods) or
         len(counts) != len(times)):
-        raise ValueError, "counts, likelihoods, and times must be of equal length"
+        raise ValueError("counts, likelihoods, and times must be of equal length")
     counts = np.array(counts)
     likelihoods = np.array(likelihoods)
     times = np.array(times)

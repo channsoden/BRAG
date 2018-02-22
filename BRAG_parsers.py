@@ -55,8 +55,8 @@ def segment_tables(reference, segment_file, seqs_file, reference_genome_file):
 
 def scaffold_table(reference):
     scaffolds = get_absolute_positions(reference)
-    scaffolds = {k.replace('NcraOR74A_', ''): v for k, v in scaffolds.items()}
-    scaffolds = {'name': sorted(scaffolds.keys(), key=lambda k: scaffolds[k]), 'abs_pos': sorted(scaffolds.values())}
+    scaffolds = {k.replace('NcraOR74A_', ''): v for k, v in list(scaffolds.items())}
+    scaffolds = {'name': sorted(list(scaffolds.keys()), key=lambda k: scaffolds[k]), 'abs_pos': sorted(scaffolds.values())}
     scaffolds = pd.DataFrame.from_dict(scaffolds)
     return scaffolds
 

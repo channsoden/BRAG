@@ -36,7 +36,7 @@ def telomere_correlations(dataset, chromosomes):
 def read_centromeres(cen_file, chromosomes):
     fh = open(cen_file, 'r')
     header = fh.readline()
-    idxs, starts, stops = zip(*[map(int, line.split('#')[0].strip().split()) for line in fh])
+    idxs, starts, stops = list(zip(*[list(map(int, line.split('#')[0].strip().split())) for line in fh]))
     centromeres = [[0, max(stops), 0, 0] for x in range(max(idxs)+1)]
     for idx, start, stop in zip(idxs, starts, stops):
         centromeres[idx][0] = chromosomes.iloc[idx].abs_pos
@@ -88,7 +88,7 @@ for start, end, length in low_regions:
         lowfh.write( '{}\n'.format(gene) )
     lowfh.write('\n')
 lowfh.close()
-print '{} genes found in {} bp of unbroken regions'.format(len(low_geneIDs), conserved_length)
+print('{} genes found in {} bp of unbroken regions'.format(len(low_geneIDs), conserved_length))
 
 # Most rapidly breaking regions
 certain = certain.sort_values('E', ascending=False)
@@ -122,7 +122,7 @@ for start, end, length in high_regions:
         highfh.write( '{}\n'.format(gene) )
     highfh.write('\n')
 highfh.close()
-print '{} genes found in {} bp of most rapidly breaking regions'.format(len(high_geneIDs), high_length)
+print('{} genes found in {} bp of most rapidly breaking regions'.format(len(high_geneIDs), high_length))
 
 def parse_core_genes(gene_table, key_file):
     gene_table = pd.read_csv(gene_table, delimiter='\t', header=0)
@@ -158,7 +158,7 @@ def core_enrichment(ax, genes, core_genes, title=None, shift=0, color='gray'):
     return bars, category_counts
 
 # Compare core gene content of high and low genes
-print
+print()
 fig = plt.figure(figsize = (5, 5))
 ax = fig.add_subplot(111)
 core_genes = parse_core_genes('takao_core_genes.tsv', 'takao_core_genes_key.txt')
@@ -177,25 +177,25 @@ for i, row in core_genes.iterrows():
         core_genes_in_category[row.ID30] += 1
     except KeyError:
         core_genes_in_category[row.ID30] = 1
-print '{} genes have a published phylogenetic distribution'.format(sum(core_genes_in_category.values()))
-for category, number in core_genes_in_category.items():
-    print '{}\t{}'.format(number, category)
+print('{} genes have a published phylogenetic distribution'.format(sum(core_genes_in_category.values())))
+for category, number in list(core_genes_in_category.items()):
+    print('{}\t{}'.format(number, category))
 
-print '{} / {} genes in conserved regions have published phylogenetic distribution'.format(sum(lowcore.values()), len(low_geneIDs))
-print '{} / {} genes in fragile regions have published phylogenetic distribution'.format(sum(highcore.values()), len(high_geneIDs))
-print
+print('{} / {} genes in conserved regions have published phylogenetic distribution'.format(sum(lowcore.values()), len(low_geneIDs)))
+print('{} / {} genes in fragile regions have published phylogenetic distribution'.format(sum(highcore.values()), len(high_geneIDs)))
+print()
 
 distributions = [[],[]]
-for label in lowcore.keys():
+for label in list(lowcore.keys()):
     distributions[0].append(lowcore[label])
     distributions[1].append(highcore[label])
 chi2, pval, dof, expected = stats.chi2_contingency(distributions)
-print '2-sample Chi-squared test if the distribution of phylogenetic conservation of'
-print 'genes in fragile (most rapidly breaking) and conserved regions are equal:'
-print 'chi2', chi2
-print 'pval', pval
-print 'dof', dof
-print
+print('2-sample Chi-squared test if the distribution of phylogenetic conservation of')
+print('genes in fragile (most rapidly breaking) and conserved regions are equal:')
+print('chi2', chi2)
+print('pval', pval)
+print('dof', dof)
+print()
 
 tests = telomere_correlations(certain, chromosomes)
 #tests.extend( telomere_correlations(uncertain, chromosomes) )
@@ -208,17 +208,17 @@ rejects, p_vals, bs, nonsense = smm.multipletests(p_vals, alpha=0.05, method='fd
 
 sig_tests = []
 insig_tests = []
-print 'label\traw_p\tp\tslope\tintercept\tr_squared'
+print('label\traw_p\tp\tslope\tintercept\tr_squared')
 for test, pv, reject in zip(tests, p_vals, rejects):
     test.p_val = pv
-    print '{}\t{:.2E}\t{:.2E}\t{:.2E}\t{:.2E}\t{:0.4f}'.format(test.label, test.raw_slope_p, pv, test.slope, test.intercept, test.r2)
+    print('{}\t{:.2E}\t{:.2E}\t{:.2E}\t{:.2E}\t{:0.4f}'.format(test.label, test.raw_slope_p, pv, test.slope, test.intercept, test.r2))
     if reject:
         sig_tests.append(test)
     else:
         insig_tests.append(test)
 
-print 'sig tests', len(sig_tests)
-print 'insig tests', len(insig_tests)
+print('sig tests', len(sig_tests))
+print('insig tests', len(insig_tests))
 
 def grid_plots(tests, outfile):
     nplots = len(tests)

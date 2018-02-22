@@ -103,9 +103,9 @@ class clique(object):
         # assuming no convergent evolution to the reference state is possible.
         for i, qb in enumerate(self.qbreaks):
             if type(qb) == type(None):
-                print 'this qb is a None:', i
-                print len(self.qbreaks)
-                print len([qb for qb in self.qbreaks if type(qb) == type(None)])
+                print('this qb is a None:', i)
+                print(len(self.qbreaks))
+                print(len([qb for qb in self.qbreaks if type(qb) == type(None)]))
         different = set([ref.tree&qb.query for qb in self.qbreaks])
         same = set(ref.tree.get_leaves()) - different # Leaves that share the state of refnode
         
@@ -326,7 +326,7 @@ def find_subgraphs(tbreaks):
         qbs -= sub_qbs
         tb_subgraphs.append(sub_tbs)
         qb_subgraphs.append(sub_qbs)
-    return zip(tb_subgraphs, qb_subgraphs)
+    return list(zip(tb_subgraphs, qb_subgraphs))
 
 def follow_connections(qbreak):
     qbs = set([qbreak])
@@ -419,7 +419,7 @@ def count_tbreaks(tbreaks, solutions, logfh=sys.stdout):
         start, end = place_tb(tb)
         edges.append((start, tb, None))
         edges.append((end, tb, None))
-    for tb in tbs_in_sols.keys():
+    for tb in list(tbs_in_sols.keys()):
         start, end = place_tb(tb)
         edges.append((start, tb, tbs_in_sols[tb]))
         edges.append((end, tb, tbs_in_sols[tb]))

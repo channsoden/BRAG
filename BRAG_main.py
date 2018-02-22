@@ -18,7 +18,7 @@ import BRAG_estimation as br
 def main(tree, reference, outgroup, output, segment_files, seqs_files,
          step=7000, window_size=35000, nthreads=1, centromeres=None, tracks=None):
     outfile = output+'.BRAG.stats'
-    print 'Writing log to {}'.format(outfile)
+    print('Writing log to {}'.format(outfile))
     log = open(outfile, 'w')
 
     tree = Tree(tree)
@@ -31,7 +31,7 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
 
     order = tree_order(reference, tree)
     tables.sort(key=lambda t: order.index(t[0])) # sort by queries into order
-    queries, rscaffolds, qscaffolds, os_tabs = zip(*tables)
+    queries, rscaffolds, qscaffolds, os_tabs = list(zip(*tables))
     rscaffolds = rscaffolds[0] # all have same reference
     N = rscaffolds.iloc[-1].abs_pos # position of the end == reference genome size
 
@@ -56,8 +56,8 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
         adj_jobs = [(map_breakpoints, [os_tab]) for os_tab in os_tabs]
         uncertain_adj_coords = mapPool(nthreads, adj_jobs)
         certain_adj_coords = [[coord for coord in coords if coord[2]] for coords in uncertain_adj_coords]
-        uncertain_adj_coords = zip(queries, uncertain_adj_coords)
-        certain_adj_coords = zip(queries, certain_adj_coords)
+        uncertain_adj_coords = list(zip(queries, uncertain_adj_coords))
+        certain_adj_coords = list(zip(queries, certain_adj_coords))
 
         br.set_reference(tree&reference, N)
 
@@ -91,7 +91,7 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
 
     # Mask Centromeres
     if centromeres:
-        centromeres = [map( int, line.split('#')[0].strip().split() )
+        centromeres = [list(map( int, line.split('#')[0].strip().split() ))
                        for line in open(centromeres, 'r')
                        if line.split('#')[0].strip()]
         abs_centromeres = [(rscaffolds.iloc[scaf_idx].abs_pos + start,
@@ -117,24 +117,24 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     track_labels = [label for label in list(tracks) if label not in ['start', 'end']]
 
     # Plot Figures
-    print
-    print 'Plotting break rates calculated with "True" qbreaks ("certain", lower bound estimate)'
-    print 'against break rates calculated with "True" and "False" break rates ("uncertain:, upper bound estimate).'
-    print output+'.uncertainty.png'
+    print()
+    print('Plotting break rates calculated with "True" qbreaks ("certain", lower bound estimate)')
+    print('against break rates calculated with "True" and "False" break rates ("uncertain:, upper bound estimate).')
+    print(output+'.uncertainty.png')
     indexer = certain_rate_windows['E'] != uncertain_rate_windows['E']
     correlation_scatter(certain_rate_windows['E'].loc[indexer],
                         uncertain_rate_windows['E'].loc[indexer],
                         output+'.uncertainty.png')
 
     if track_labels:
-        print
-        print 'Performing linear regression between extra data tracks and break rate.'
-        print output+'.tracks_x_breakrate.png'
+        print()
+        print('Performing linear regression between extra data tracks and break rate.')
+        print(output+'.tracks_x_breakrate.png')
         track_correlation(certain_rate_windows, tracks, track_labels, output+'.tracks_x_breakrate.png')
 
-    print
-    print 'Plotting break rates and extra tracks along the reference genome.'
-    print output + '.brMap.png'
+    print()
+    print('Plotting break rates and extra tracks along the reference genome.')
+    print(output + '.brMap.png')
     plot_break_rate(N, queries, os_tabs,
                     certain_estimates, uncertain_estimates,
                     certain_rate_windows, uncertain_rate_windows,
@@ -208,7 +208,7 @@ def get_adjacencies(scaf_col, os_tab):
         scaf = os_tab[os_tab[scaf_col] == scaf]
         heads.append(scaf[idx].iloc[0])
         tails.append(scaf[idx].iloc[-1])
-        adj.extend(zip(scaf[idx][:-1], scaf[idx][1:]))
+        adj.extend(list(zip(scaf[idx][:-1], scaf[idx][1:])))
     return adj, heads, tails
 
 def rate_windows(regions, N, window_size = 35000, step=7000):
