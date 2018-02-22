@@ -2,22 +2,7 @@
 wget -O genomes.tar.gz https://osf.io/vmkc8/?action=download
 tar -xzf genomes.tar.gz
 
-# Make links to required modules
-cd ..
-ln -s hannsoden-bioinformatics/processing_tools.py
-ln -s hannsoden-bioinformatics/plots.py
-ln -s hannsoden-bioinformatics/tree_tools.py
-ln -s hannsoden-bioinformatics/fasta_tools.py
-ln -s hannsoden-bioinformatics/sakakibara_tools.py
-ln -s hannsoden-bioinformatics/gff_tools.py
-ln -s hannsoden-bioinformatics/plotting_tools.py
-cd sample_data
-ln -s ../BRAG_parsers.py
-ln -s ../hannsoden-bioinformatics/fasta_tools.py
-ln -s ../hannsoden-bioinformatics/gff_tools.py
-ln -s ../hannsoden-bioinformatics/plots.py
-ln -s ../hannsoden-bioinformatics/plotting_tools.py
-ln -s ../hannsoden-bioinformatics/sakakibara_tools.py
+PYTHONPATH=$PYTHONPATH:../hannsoden-bioinformatics:..
 
 # Generate extra tracks of data
 python2 extra_tracks.py
