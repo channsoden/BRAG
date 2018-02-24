@@ -5,11 +5,10 @@
 import numpy as np
 import statsmodels.api as sm
 import statsmodels.stats.multitest as smm
-import matplotlib
-matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from matplotlib import collections as mc
 from matplotlib import patches, gridspec, colors
+from matplotlib.colorbar import Colorbar
 
 # My modules
 from plotting_tools import alphabet, minimal, heat_scale, figure_add_alpha, simple_axis, percent_labels
@@ -32,7 +31,8 @@ def OS_length_hist(reference, query, os_tab):
     my_hist(intL, inter_lengths)
     segL.set_xlabel('orthologous\nsegment length')
     intL.set_xlabel('non-orthologous\nsegment length')
-    hists.savefig(reference+'.'+query+'.seg_lengths.png', bbox_inches='tight')
+    hists.savefig(reference+'_'+query+'_seg-lengths')
+    plt.close(hists)
 
 def my_hist(ax, series):
     bins = np.logspace(1, np.log10(series.max()), num=50)
@@ -73,8 +73,8 @@ def degrading_coverage(coverages, os_tabs, N, output):
             uncovered.add(query)
 
     survivals = [1]+[float(s)/N for s in survivals]
-            
-    fig = plt.figure(figsize=(8,8))
+
+    fig = plt.figure(figsize=(6,6))
     ax = fig.add_subplot(111)
     ax.plot(survivals, 'k-')
 
@@ -86,6 +86,7 @@ def degrading_coverage(coverages, os_tabs, N, output):
     simple_axis(ax)
     
     fig.savefig(output)
+    plt.close(fig)
     
 ### Plot of rearrangement rates along reference genome
 def plot_break_rate(N, queries, os_tabs,
@@ -130,7 +131,8 @@ def plot_break_rate(N, queries, os_tabs,
         a.set_xticklabels(rscaffolds.iloc[:-1].name)
         a.set_xlim(0, N)
 
-    fig.savefig(outfile, bbox_inches='tight', dpi=200)
+    fig.savefig(outfile, dpi=350)
+    plt.close(fig)
     
 def paint_reference(ax, row, os_tab):
     #os_tab['rcolors'] = alphabet[(os_tab.rchr-1) % len(alphabet)]
@@ -179,11 +181,12 @@ def rate_plot(ax, rate_estimates, rate_windows, N, step=7000, label=''):
     heatmap = ax.pcolor(hm_x, log_rates, likelihoods, cmap='viridis',
                         norm=colors.LogNorm(vmin=1e-10, vmax=1))
 
-    legend = label.replace('\n', '')+'.legend.png'
-    legendfig = plt.figure()
-    legend_ax = fig.add_subplot(111)
-    legendfig.colorbar(heatmap, ax=ax)
-    legendfig.savefig(legend, bbox_inches='tight', dpi=200)
+    legend = label.replace('\n', '')+'_legend'
+    legendfig = plt.figure(figsize=(.5,6))
+    legend_ax = legendfig.add_subplot(111)
+    cbar = Colorbar(legend_ax, heatmap)
+    legendfig.savefig(legend)
+    plt.close(legendfig)
     
     # Plot expectation as solid line
     ax.plot(window_x, log_expectation, 'k-', linewidth=2, label='Expected Rate')
@@ -204,13 +207,17 @@ def correlation_scatter(x1, x2, outfile):
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111)
-    ax.scatter(np.log(x2), y, color='k', alpha=0.35, linewidth=0)
+    test = regression_plot(x2, y)
+    test.regress()
+    test.draw(ax, logx=True, fit_report_location = (0.05, 0.05))
 
-    ax.set_ylabel('certain / uncertain')
-    ax.set_xlabel('ln(break rate)')
+    ax.set_ylabel('br(True) / br(True U False)')
+    ax.set_xlabel('log( br(True U False) )')
     ax.set_ylim(0, 2)
 
-    fig.savefig(outfile, bbox_inches='tight')
+    fig.savefig(outfile)
+    plt.close(fig)
+    return test
 
 def track_correlation(rate_windows, tracks, track_labels, outfile):
     rate_x = (rate_windows.start + rate_windows.end) / 2
@@ -251,7 +258,7 @@ def track_correlation(rate_windows, tracks, track_labels, outfile):
 
     nplots = len(tests)
     columns = 4
-    rows = (nplots-1) / 2 + 1
+    rows = int((nplots-1) / 2) + 1
     plotsize = (4, 4)
     figsize = (plotsize[0]*columns, plotsize[1]*rows)
     fig = plt.figure(figsize=figsize)
@@ -261,5 +268,6 @@ def track_correlation(rate_windows, tracks, track_labels, outfile):
     for ax, test in zip(axes, tests):
         test.draw(ax, logy = True, fit_report_location = (0.05, 0.05), marker_alpha=0.1)
 
-    fig.savefig(outfile, bbox_inches='tight', dpi=200)
+    fig.savefig(outfile)
+    plt.close(fig)
 

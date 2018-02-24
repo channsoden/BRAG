@@ -43,7 +43,7 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     log.write('Maximum coverage:\t{}\n'.format(coverage_stats.minmax[1]))
     log.write('SD coverage:\t{}\n'.format(coverage_stats.variance ** 0.5))
     log.write('Cumulative coverage:\t{}\n\n'.format(cumulative_coverage(os_tabs, N)))
-    degrading_coverage(coverages, os_tabs, N, 'coverage_survival_curve.png')
+    degrading_coverage(coverages, os_tabs, N, 'coverage_survival_curve')
 
     hist_jobs = [(OS_length_hist, (reference, query, os_tab)) for query, rscaffolds, qscaffolds, os_tab in tables]
     mapPool(nthreads, hist_jobs)
@@ -120,27 +120,37 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     print()
     print('Plotting break rates calculated with "True" qbreaks ("certain", lower bound estimate)')
     print('against break rates calculated with "True" and "False" break rates ("uncertain:, upper bound estimate).')
-    print(output+'.uncertainty.png')
-    indexer = certain_rate_windows['E'] != uncertain_rate_windows['E']
-    correlation_scatter(certain_rate_windows['E'].loc[indexer],
-                        uncertain_rate_windows['E'].loc[indexer],
-                        output+'.uncertainty.png')
+    print(output+'_uncertainty')
+    indexer = (certain_rate_windows['E'] != uncertain_rate_windows['E']) & (uncertain_rate_windows['E'] != 0)
+    model = correlation_scatter(certain_rate_windows['E'].loc[indexer],
+                                uncertain_rate_windows['E'].loc[indexer],
+                                output+'_uncertainty')
+    same = (certain_rate_windows['E'] == uncertain_rate_windows['E']).sum()
+    num_windows = len(certain_rate_windows)
+    print('{}/{} ({:.2f}%) windows have identical break rates'.format(same, num_windows, same/num_windows * 100))
+    uncertain_over = (certain_rate_windows['E'] < uncertain_rate_windows['E']).sum()
+    report = '{}/{} ({:.2f}%) of non-identical windows have (True) < (True | False)'
+    report = report.format(uncertain_over, num_windows - same, uncertain_over/(num_windows - same) * 100)
+    print(report)
+    mean_ratio = (certain_rate_windows['E'].loc[indexer] / uncertain_rate_windows['E'].loc[indexer]).mean()
+    print('Mean ratio of (True)/(True | False) when True != False: {}'.format(mean_ratio))
+    print('(True)/(True | False) = {:.4f}*(True | False) + {:.4f}; p={:.3E} R2={:.3E}'.format(model.slope, model.intercept, model.p_val, model.r2))
 
     if track_labels:
         print()
         print('Performing linear regression between extra data tracks and break rate.')
-        print(output+'.tracks_x_breakrate.png')
-        track_correlation(certain_rate_windows, tracks, track_labels, output+'.tracks_x_breakrate.png')
+        print(output+'_tracks-x-breakrate')
+        track_correlation(certain_rate_windows, tracks, track_labels, output+'_tracks-x-breakrate')
 
     print()
     print('Plotting break rates and extra tracks along the reference genome.')
-    print(output + '.brMap.png')
+    print(output + '_brMap')
     plot_break_rate(N, queries, os_tabs,
                     certain_estimates, uncertain_estimates,
                     certain_rate_windows, uncertain_rate_windows,
                     tracks, track_labels,
                     rscaffolds, abs_centromeres,
-                    step, output + '.brMap.png')
+                    step, output + '_brMap')
 
 def infer_reference(seqs_files):
     # The reference is the genome that appears in all the seqs files.

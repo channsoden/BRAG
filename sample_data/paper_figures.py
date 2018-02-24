@@ -2,14 +2,13 @@
 import sys
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 from scipy import stats
 import statsmodels.stats.multitest as smm
 
 from plots import regression_plot, pretty_bar
+from plotting_tools import direct_labels
 from BRAG_parsers import scaffold_table
 from gff_tools import gff_table
 
@@ -24,11 +23,11 @@ def telomere_correlations(dataset, chromosomes):
         rarm = dataset.loc[(dataset.start >= rstart) & (dataset.end <= rend)]
 
         # left arm works from left to right
-        ltest = regression_plot(larm.midpoint - lstart, larm.E, label+'left')
+        ltest = regression_plot(larm.midpoint - lstart, larm.E, label=label+'left')
         ltest.regress(slope = 'negative')
         tests.append(ltest)
         # right arm works from right to left
-        rtest = regression_plot(rend - rarm.midpoint, rarm.E, label+'right')
+        rtest = regression_plot(rend - rarm.midpoint, rarm.E, label=label+'right')
         rtest.regress(slope = 'negative')
         tests.append(rtest)
     return tests
@@ -140,7 +139,7 @@ def parse_core_genes(gene_table, key_file):
 
     return gene_table
 
-def core_enrichment(ax, genes, core_genes, title=None, shift=0, color='gray'):
+def core_enrichment(genes, core_genes):
     core_genes_present = core_genes.loc[core_genes.Broad7_geneID.isin(genes)]
 
     category_counts = {}
@@ -153,23 +152,27 @@ def core_enrichment(ax, genes, core_genes, title=None, shift=0, color='gray'):
             label_order.append(row.ID30)
     label_order = [l for l in label_order if l != 'Others']
 
-    bars = pretty_bar(ax, [category_counts[label] for label in label_order], label_order,
-               title=title, shift=shift, barcolor=color, barwidth=0.4)
-    return bars, category_counts
+    return category_counts, label_order
 
 # Compare core gene content of high and low genes
 print()
-fig = plt.figure(figsize = (5, 5))
-ax = fig.add_subplot(111)
 core_genes = parse_core_genes('takao_core_genes.tsv', 'takao_core_genes_key.txt')
-lowbars, lowcore = core_enrichment(ax, low_geneIDs, core_genes, color='black')
-highbars, highcore = core_enrichment(ax, high_geneIDs, core_genes, shift=0.4)
-# relabel
-ax.set_xticks([i+0.2 for i in range(5)])
-# legend
-ax.legend((lowbars, highbars), ('Conserved Regions', 'Fragile Regions'))
-ax.set_ylabel('Genes')
-fig.savefig('core_gene_content.png', bbox_inches='tight', dpi=200)
+lowcounts, label_order = core_enrichment(low_geneIDs, core_genes)
+highcounts, label_order = core_enrichment(high_geneIDs, core_genes)
+label_order = label_order[::-1]
+diffcounts = [lowcounts[label]-highcounts[label] for label in label_order]
+
+fig = plt.figure(figsize = (6, 6))
+ax = fig.add_subplot(111)
+bars = pretty_bar(ax, diffcounts, label_order, horizontal=True)
+direct_labels(ax, list(range(len(diffcounts))), diffcounts, horizontal=True, num_format='0:+')
+direct_labels(ax, list(range(len(diffcounts))),
+              [((n<0)*2)-1 for n in diffcounts],
+              altlabels=[highcounts[l] for l in label_order],
+              horizontal=True)
+ax.set_xlim(-20, 140)
+ax.set_xlabel('Conserved Genes - Fragile Genes')
+fig.savefig('core_gene_content')
 
 core_genes_in_category = {}
 for i, row in core_genes.iterrows():
@@ -181,14 +184,12 @@ print('{} genes have a published phylogenetic distribution'.format(sum(core_gene
 for category, number in list(core_genes_in_category.items()):
     print('{}\t{}'.format(number, category))
 
-print('{} / {} genes in conserved regions have published phylogenetic distribution'.format(sum(lowcore.values()), len(low_geneIDs)))
-print('{} / {} genes in fragile regions have published phylogenetic distribution'.format(sum(highcore.values()), len(high_geneIDs)))
+print('{} / {} genes in conserved regions have published phylogenetic distribution'.format(sum(lowcounts.values()), len(low_geneIDs)))
+print('{} / {} genes in fragile regions have published phylogenetic distribution'.format(sum(highcounts.values()), len(high_geneIDs)))
 print()
 
-distributions = [[],[]]
-for label in list(lowcore.keys()):
-    distributions[0].append(lowcore[label])
-    distributions[1].append(highcore[label])
+distributions = [[lowcounts[label] for label in label_order],
+                 [highcounts[label] for label in label_order]]
 chi2, pval, dof, expected = stats.chi2_contingency(distributions)
 print('2-sample Chi-squared test if the distribution of phylogenetic conservation of')
 print('genes in fragile (most rapidly breaking) and conserved regions are equal:')
@@ -223,7 +224,7 @@ print('insig tests', len(insig_tests))
 def grid_plots(tests, outfile):
     nplots = len(tests)
     columns = 2
-    rows = (nplots -1) / 2 + 1
+    rows = int((nplots -1) / 2) + 1
     plotsize = (4, 4)
     figsize = (plotsize[0]*columns, plotsize[1]*rows)
     fig = plt.figure(figsize=figsize)
@@ -232,7 +233,7 @@ def grid_plots(tests, outfile):
 
     for ax, test in zip(axes, tests):
         test.draw(ax, logy = True, fit_report_location = (0.05, 0.05))
-    fig.savefig(outfile, bbox_inches='tight', dpi=200)
+    fig.savefig(outfile, dpi=350)
 
-grid_plots(tests, 'brag_correlations.png')
+grid_plots(tests, 'brag_correlations')
 

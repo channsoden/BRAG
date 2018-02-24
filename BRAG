@@ -113,11 +113,5 @@ def parse_args():
     return args
 
 if __name__ == '__main__':
-    from guppy import hpy
-    h = hpy()
-    print(h.heap())
-
     args = parse_args()
     main(**vars(args))
-
-    print(h.heap())
