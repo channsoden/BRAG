@@ -12,7 +12,7 @@ from plotting_tools import direct_labels
 from BRAG_parsers import scaffold_table
 from gff_tools import gff_table
 
-def telomere_correlations(dataset, chromosomes):
+def telomere_correlations(dataset, chromosomes, datalabel):
     dataset['midpoint'] = (dataset.start + dataset.end) / 2.
     tests = []
     for chr_num, coordinates in enumerate(chromosomes):
@@ -23,11 +23,11 @@ def telomere_correlations(dataset, chromosomes):
         rarm = dataset.loc[(dataset.start >= rstart) & (dataset.end <= rend)]
 
         # left arm works from left to right
-        ltest = regression_plot(larm.midpoint - lstart, larm.E, label=label+'left')
+        ltest = regression_plot(larm.midpoint - lstart, larm[datalabel], label=label+'left')
         ltest.regress(slope = 'negative')
         tests.append(ltest)
         # right arm works from right to left
-        rtest = regression_plot(rend - rarm.midpoint, rarm.E, label=label+'right')
+        rtest = regression_plot(rend - rarm.midpoint, rarm[datalabel], label=label+'right')
         rtest.regress(slope = 'negative')
         tests.append(rtest)
     return tests
@@ -198,8 +198,11 @@ print('pval', pval)
 print('dof', dof)
 print()
 
-tests = telomere_correlations(certain, chromosomes)
-#tests.extend( telomere_correlations(uncertain, chromosomes) )
+
+# is break rate correlated with distance to telomere?
+
+tests = telomere_correlations(certain, chromosomes, 'E')
+#tests.extend( telomere_correlations(uncertain, chromosomes, 'E') )
 
 # multiple testing correction for testing each chromosome arm independently
 # use 'fdr_tsbh' for two stage fdr correction via Benjamini/Hochberg method
@@ -221,7 +224,7 @@ for test, pv, reject in zip(tests, p_vals, rejects):
 print('sig tests', len(sig_tests))
 print('insig tests', len(insig_tests))
 
-def grid_plots(tests, outfile):
+def grid_plots(tests, outfile, logy=True):
     nplots = len(tests)
     columns = 2
     rows = int((nplots -1) / 2) + 1
@@ -232,8 +235,39 @@ def grid_plots(tests, outfile):
     axes = [fig.add_subplot(gs[x]) for x in range(nplots)]
 
     for ax, test in zip(axes, tests):
-        test.draw(ax, logy = True, fit_report_location = (0.05, 0.05))
+        test.draw(ax, logy = logy, fit_report_location = (0.05, 0.05))
     fig.savefig(outfile, dpi=350)
+    plt.close(fig)
 
 grid_plots(tests, 'brag_correlations')
 
+
+# is CRI correlated with distance to telomere?
+
+print('regression of CRI w/ telomere distance')
+
+extra_tracks = pd.read_csv('Ncra_extra_tracks.tsv', sep='\t', header=0)
+
+tests = telomere_correlations(extra_tracks, chromosomes, 'CRI')
+
+# multiple testing correction for testing each chromosome arm independently
+# use 'fdr_tsbh' for two stage fdr correction via Benjamini/Hochberg method
+p_vals = [test.raw_slope_p for test in tests]
+rejects, p_vals, bs, nonsense = smm.multipletests(p_vals, alpha=0.05, method='fdr_tsbh')
+
+
+sig_tests = []
+insig_tests = []
+print('label\traw_p\tp\tslope\tintercept\tr_squared')
+for test, pv, reject in zip(tests, p_vals, rejects):
+    test.p_val = pv
+    print('{}\t{:.2E}\t{:.2E}\t{:.2E}\t{:.2E}\t{:0.4f}'.format(test.label, test.raw_slope_p, pv, test.slope, test.intercept, test.r2))
+    if reject:
+        sig_tests.append(test)
+    else:
+        insig_tests.append(test)
+
+print('sig tests', len(sig_tests))
+print('insig tests', len(insig_tests))
+
+grid_plots(tests, 'CRI_correlations', logy=False)

@@ -198,10 +198,10 @@ def map_breakpoints(os_tab):
     # True coords are definitely breakpoints
     # False coords are possibly breakpoints, but unknown due to fragmentation of query assembly
     ref_adj_coords = [(os_tab.loc[os_tab.ridx == a, 'rend_abs'].iloc[0],
-                    os_tab.loc[os_tab.ridx == b, 'rstart_abs'].iloc[0],
-                    not ((a in qtails and b in qheads) or
-                         (-a in qheads and -b in qtails)))
-                   for a, b in ref_adj]
+                       os_tab.loc[os_tab.ridx == b, 'rstart_abs'].iloc[0],
+                       not ((a in qtails and b in qheads) or
+                            (-a in qheads and -b in qtails)))
+                      for a, b in ref_adj]
     
     return ref_adj_coords
 
