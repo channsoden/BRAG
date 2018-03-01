@@ -66,8 +66,8 @@ class qbreak(object):
         self.start = start
         self.end = end
         self.certain = certainty
-        self.cliques = {}
-        self.tbreaks = {}
+        self.cliques = set()
+        self.tbreaks = set()
         self.placed = False
 
     def __repr__(self):
@@ -79,8 +79,8 @@ class qbreak(object):
 
     def reset(self):
         assert not self.placed, 'should not reset placed qbreaks'
-        self.tbreaks = {}
-        self.cliques = {}
+        self.tbreaks = set()
+        self.cliques = set()
 
 class clique(object):
     # A clique is a set of qbreaks that are all adjacent in the interval graph.
@@ -172,18 +172,13 @@ class tbreak(object):
 
         [qb.tbreaks.add(self) for qb in self.qbreaks]
 
-    def __hash__(self):
-        return id(self)
-
     def __eq__(self, other):
-        assert 1 == 2, 'did eq here'
         if isinstance(other, self.__class__):
             sort_key = lambda qb: qb.start
             return sorted(self.qbreaks, key=sort_key) == sorted(other.qbreaks, key=sort_key)
         return NotImplemented
     
     def __ne__(self, other):
-        assert 'a' == 'b', 'did ne here'
         if isinstance(other, self.__class__):
             return not self.__eq__(other)
         return NotImplemented
@@ -232,7 +227,7 @@ def break_rate(adj_coords, output=None, threads=1):
     sub_graphs = [reduce_graph(*subgraph) for subgraph in sub_graphs]
     logfh.write( '{}\tdisconnected subgraphs\t{}\n'.format(len(sub_graphs), clock.report()) )
     
-    essential_tbreaks = {}
+    essential_tbreaks = set()
     complex_sub_graphs = []
     for tbreaks, qbreaks in sub_graphs:
         reduced, simplicial, essential = remove_simplicial(qbreaks)
@@ -285,7 +280,7 @@ def find_maximal_cliques(qbreaks):
     edges.sort(key=lambda edge: edge[0])
 
     last_removal = False
-    open_qbreaks = {}
+    open_qbreaks = set()
     cliques = [clique(0, edges[0][0], open_qbreaks)]
     for i, edge in enumerate(edges[:-1]):
         position, qb = edge
@@ -335,9 +330,9 @@ def find_subgraphs(tbreaks):
 
 def follow_connections(qbreak):
     qbs = set([qbreak])
-    tbs = {}
-    qbs_visited = {}
-    tbs_visited = {}
+    tbs = set()
+    qbs_visited = set()
+    tbs_visited = set()
     while qbs != qbs_visited:
         unvisited = qbs - qbs_visited
         tbs.update(*[qb.tbreaks for qb in unvisited])
@@ -354,7 +349,7 @@ def reduce_graph(tbreaks, qbreaks):
 def maximize_tbreaks(tbreaks):
     """Remove tbreaks that are non-maximal.
     i.e. remove tbreaks that are subsets of other tbreaks."""
-    subsets = {}
+    subsets = set()
     for tb1 in tbreaks:
         for tb2 in tbreaks:
             if tb1.qbreaks < tb2.qbreaks:
@@ -365,7 +360,7 @@ def maximize_tbreaks(tbreaks):
 def minimize_qbreaks(qbreaks):
     """Reduce the set of qbreaks within tbreaks to only subset-minimal qbreaks.
     A qbreak is subset-minimal if it's dual (qbreak.tbreaks) contains no other dual as a proper subset."""
-    non_minimal = {}
+    non_minimal = set()
     for qb1 in qbreaks:
         for qb2 in qbreaks:
             if qb1.tbreaks < qb2.tbreaks:
@@ -428,7 +423,7 @@ def count_tbreaks(tbreaks, solutions, logfh=sys.stdout):
         start, end = place_tb(tb)
         edges.append((start, tb, tbs_in_sols[tb]))
         edges.append((end, tb, tbs_in_sols[tb]))
-    edges.sort(key=lambda edge: edge[0])
+    edges.sort()
     
     open_tbreaks = []
     open_solutions = [[[] for cov in sol] for sol in solutions]
