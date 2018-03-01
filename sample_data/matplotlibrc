@@ -1,0 +1,28 @@
+# This is a configuration file for matplotlib.
+# Set default parameters for drawing figures here.
+
+# The default backend; one of GTK GTKAgg GTKCairo GTK3Agg GTK3Cairo
+# MacOSX Qt4Agg Qt5Agg TkAgg WX WXAgg Agg Cairo GDK PS PDF SVG
+# Template.
+# You can also deploy your own backend outside of matplotlib by
+# referring to the module name (which must be in the PYTHONPATH) as
+# 'module://my_backend'.
+backend      : Agg
+
+# the default savefig params can be different from the display params
+# background white
+savefig.dpi         : 200     # figure dots per inch or 'figure'
+savefig.facecolor   : white    # figure facecolor when saving
+savefig.edgecolor   : white    # figure edgecolor when saving
+savefig.format      : png      # png, ps, pdf, svg
+savefig.bbox        : tight    # 'tight' or 'standard'.
+                               # 'tight' is incompatible with pipe-based animation
+                               # backends but will workd with temporary file based ones:
+                               # e.g. setting animation.writer to ffmpeg will not work,
+                               # use ffmpeg_file instead
+savefig.pad_inches  : 0.1      # Padding to be used when bbox is set to 'tight'
+#savefig.jpeg_quality: 95       # when a jpeg is saved, the default quality parameter.
+#savefig.directory   : ~        # default directory in savefig dialog box,
+                                # leave empty to always use current working directory
+#savefig.transparent : False    # setting that controls whether figures are saved with a
+                                # transparent background by default
