@@ -277,7 +277,7 @@ def find_maximal_cliques(qbreaks):
     for qb in qbreaks:
         edges.append((qb.start, qb))
         edges.append((qb.end, qb))
-    edges.sort()
+    edges.sort(key=lambda edge: edge[0])
 
     last_removal = False
     open_qbreaks = set()
