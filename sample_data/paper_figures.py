@@ -45,8 +45,8 @@ def read_centromeres(cen_file, chromosomes):
     return centromeres
 
 
-certain = pd.read_csv('small_windows_certain_rate_windows.txt', sep='\t', header=0)
-uncertain = pd.read_csv('small_windows_uncertain_rate_windows.txt', sep='\t', header=0)
+certain = pd.read_csv('Ncrassa_certain_rate_windows.txt', sep='\t', header=0)
+uncertain = pd.read_csv('Ncrassa_uncertain_rate_windows.txt', sep='\t', header=0)
 # get the scaffold lengths
 scaffolds = scaffold_table('genomes/Neurospora-crassa_OR74A_v12_fixed.fasta')
 # calculate the coordinates of left and right arms of the chromosomes
