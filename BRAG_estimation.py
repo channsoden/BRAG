@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 # My modules
+from BRAG_main import timer
 from BRAG_poisson import composite_poisson_likelihood
 from processing_tools import mapPool
 
@@ -29,18 +30,6 @@ def set_reference(refnode, genome_length):
     ref.refnode = refnode
     ref.N = genome_length
     ref.masks = {branch:tree_mask(branch) for branch in branches}
-
-class timer:
-    def __init__(self):
-        self.start = time.time()
-        self.last = self.start
-
-    def report(self):
-        now = time.time()
-        step = now - self.last
-        total = now - self.start
-        self.last = now
-        return '{:.3f} seconds elapsed ({:.3f} total)'.format(step, total)
     
 class tree_mask:
     def __init__(self, branch):

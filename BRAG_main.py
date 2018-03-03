@@ -26,6 +26,9 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
         print('Writing messages to stdout\nWriting results to {}*'.format(output))
         log = sys.stdout
 
+    clock = timer()
+    log.write('Reading input. . .\n')
+    
     tree = Tree(tree)
     root(tree, [outgroup])
 
@@ -48,10 +51,13 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     log.write('Maximum coverage:\t{}\n'.format(coverage_stats.minmax[1]))
     log.write('SD coverage:\t{}\n'.format(coverage_stats.variance ** 0.5))
     log.write('Cumulative coverage:\t{}\n\n'.format(cumulative_coverage(os_tabs, N)))
-    degrading_coverage(coverages, os_tabs, N, output+'_coverage_survival_curve')
+    log.write(clock.report()+'\n')
 
+    log.write('Plotting coverage of alignments and histograms of OS and qbreak lengths. . .')
+    degrading_coverage(coverages, os_tabs, N, output+'_coverage_survival_curve')
     hist_jobs = [(OS_length_hist, (reference, query, os_tab)) for query, rscaffolds, qscaffolds, os_tab in tables]
     mapPool(nthreads, hist_jobs)
+    log.write(clock.report()+'\n')
 
     certain_out = output+'_certain'
     uncertain_out = output+'_uncertain'
@@ -96,7 +102,9 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
         certain_rate_windows.to_csv(certain_out+'_rate_windows.txt', sep='\t', index=False)
     else:
         certain_rate_windows = pd.read_csv(certain_out+'_rate_windows.txt', sep='\t', header=0)
+    log.write(clock.report()+'\n')
 
+    log.write('Processing centromeres & extra data tracks, if applicable. . .')
     # Mask Centromeres
     if centromeres:
         centromeres = [list(map( int, line.split('#')[0].strip().split() ))
@@ -114,7 +122,7 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     scaffold_boundaries = [(x, x) for x in rscaffolds.abs_pos]
     certain_rate_windows = mask(certain_rate_windows, scaffold_boundaries, inclusive=False)
     uncertain_rate_windows = mask(uncertain_rate_windows, scaffold_boundaries, inclusive=False)
-
+    
     # Add in extra data tracks and mask
     if tracks:
         tracks = pd.read_csv(tracks, sep='\t')
@@ -123,43 +131,59 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     else:
         tracks = []
     track_labels = [label for label in list(tracks) if label not in ['start', 'end']]
+    log.write(clock.report()+'\n')
 
     # Plot Figures
-    print()
-    print('Plotting break rates calculated with "True" qbreaks ("certain", lower bound estimate)')
-    print('against break rates calculated with "True" and "False" break rates ("uncertain:, upper bound estimate).')
-    print(output+'_uncertainty')
+    log.write('\n')
+    log.write('Plotting break rates calculated with "True" qbreaks ("certain", lower bound estimate)\n')
+    log.write('against break rates calculated with "True" and "False" break rates ("uncertain:, upper bound estimate).\n')
+    log.write(output+'_uncertainty\n')
     indexer = (certain_rate_windows['E'] != uncertain_rate_windows['E']) & (uncertain_rate_windows['E'] != 0)
     model = correlation_scatter(certain_rate_windows['E'].loc[indexer],
                                 uncertain_rate_windows['E'].loc[indexer],
                                 output+'_uncertainty')
     same = (certain_rate_windows['E'] == uncertain_rate_windows['E']).sum()
     num_windows = len(certain_rate_windows)
-    print('{}/{} ({:.2f}%) windows have identical break rates'.format(same, num_windows, same/num_windows * 100))
+    log.write('{}/{} ({:.2f}%) windows have identical break rates'.format(same, num_windows, same/num_windows * 100))
     uncertain_over = (certain_rate_windows['E'] < uncertain_rate_windows['E']).sum()
     report = '{}/{} ({:.2f}%) of non-identical windows have (True) < (True | False)'
     report = report.format(uncertain_over, num_windows - same, uncertain_over/(num_windows - same) * 100)
-    print(report)
+    log.write(report)
     mean_ratio = (certain_rate_windows['E'].loc[indexer] / uncertain_rate_windows['E'].loc[indexer]).mean()
-    print('Mean ratio of (True)/(True | False) when True != False: {}'.format(mean_ratio))
-    print('(True)/(True | False) = {:.4f}*(True | False) + {:.4f}; p={:.3E} R2={:.3E}'.format(model.slope, model.intercept, model.p_val, model.r2))
-
+    log.write('Mean ratio of (True)/(True | False) when True != False: {}'.format(mean_ratio))
+    log.write('(True)/(True | False) = {:.4f}*(True | False) + {:.4f}; p={:.3E} R2={:.3E}'.format(model.slope, model.intercept, model.p_val, model.r2))
+    log.write(clock.report()+'\n')
+    
     if track_labels:
-        print()
-        print('Performing linear regression between extra data tracks and break rate.')
-        print(output+'_tracks-x-breakrate')
+        log.write('\n')
+        log.write('Performing linear regression between extra data tracks and break rate.\n')
+        log.write(output+'_tracks-x-breakrate\n')
         track_correlation(certain_rate_windows, tracks, track_labels, output+'_tracks-x-breakrate')
+        log.write(clock.report()+'\n')
 
-    print()
-    print('Plotting break rates and extra tracks along the reference genome.')
-    print(output + '_brMap')
+    log.write('\n\n')
+    log.write('Plotting break rates and extra tracks along the reference genome.\n')
+    log.write(output + '_brMap\n')
     plot_break_rate(N, queries, os_tabs,
                     certain_estimates, uncertain_estimates,
                     certain_rate_windows, uncertain_rate_windows,
                     tracks, track_labels,
                     rscaffolds, abs_centromeres,
                     step, output + '_brMap')
+    log.write('BRAG Finished!\t{}\n'.format(clock.report()))
 
+class timer:
+    def __init__(self):
+        self.start = time.time()
+        self.last = self.start
+
+    def report(self):
+        now = time.time()
+        step = now - self.last
+        total = now - self.start
+        self.last = now
+        return '{:.3f} seconds elapsed ({:.3f} total)'.format(step, total)
+    
 def infer_reference(seqs_files):
     # The reference is the genome that appears in all the seqs files.
     # If there are multiple such genomes, or none, than something is wrong.
