@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Standard modules
-import os, sys, argparse
+import os, sys
 
 # Nonstandard modules
 import pandas as pd
@@ -17,9 +17,14 @@ import BRAG_estimation as br
 
 def main(tree, reference, outgroup, output, segment_files, seqs_files,
          step=7000, window_size=35000, nthreads=1, centromeres=None, tracks=None):
-    outfile = output+'.BRAG.stats'
-    print('Writing log to {}'.format(outfile))
-    log = open(outfile, 'w')
+    if output:
+        outfile = output+'.BRAG.stats'
+        print('Writing messages to {}'.format(outfile))
+        log = open(outfile, 'w')
+    else:
+        output = 'rearrangement_analysis'
+        print('Writing messages to stdout\nWriting results to {}*'.format(output))
+        log = sys.stdout
 
     tree = Tree(tree)
     root(tree, [outgroup])
@@ -35,7 +40,7 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     rscaffolds = rscaffolds[0] # all have same reference
     N = rscaffolds.iloc[-1].abs_pos # position of the end == reference genome size
 
-    coverages = [np.sum(os_tab.rend - os_tab.rstart) / float(N) for os_tab in os_tabs]
+    coverages = [np.sum(os_tab.rend - (os_tab.rstart -1)) / float(N) for os_tab in os_tabs]
     coverage_stats = describe(coverages)
     log.write('{} genomes aligned to {}.\n'.format(coverage_stats.nobs, reference))
     log.write('Minimum coverage:\t{}\n'.format(coverage_stats.minmax[0]))
@@ -43,16 +48,19 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     log.write('Maximum coverage:\t{}\n'.format(coverage_stats.minmax[1]))
     log.write('SD coverage:\t{}\n'.format(coverage_stats.variance ** 0.5))
     log.write('Cumulative coverage:\t{}\n\n'.format(cumulative_coverage(os_tabs, N)))
-    degrading_coverage(coverages, os_tabs, N, 'coverage_survival_curve')
+    degrading_coverage(coverages, os_tabs, N, output+'_coverage_survival_curve')
 
     hist_jobs = [(OS_length_hist, (reference, query, os_tab)) for query, rscaffolds, qscaffolds, os_tab in tables]
     mapPool(nthreads, hist_jobs)
 
+    certain_out = output+'_certain'
+    uncertain_out = output+'_uncertain'
+
     log.write('\nEstimating break rates. . .\n\n')
-    if not (os.path.isfile('uncertain_breakrate_rates.tab') and
-            os.path.isfile('certain_breakrate_rates.tab') and
-            os.path.isfile('uncertain_breakrate.log') and
-            os.path.isfile('certain_breakrate.log')):
+    if not (os.path.isfile(uncertain_out+'_rates.tab') and
+            os.path.isfile(certain_out+'_rates.tab') and
+            os.path.isfile(uncertain_out+'.log') and
+            os.path.isfile(certain_out+'.log')):
         adj_jobs = [(map_breakpoints, [os_tab]) for os_tab in os_tabs]
         uncertain_adj_coords = mapPool(nthreads, adj_jobs)
         certain_adj_coords = [[coord for coord in coords if coord[2]] for coords in uncertain_adj_coords]
@@ -61,33 +69,33 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
 
         br.set_reference(tree&reference, N)
 
-    log.write('Calculating Ambiguous (Unconfirmed) Break Rates:\n')
-    if not (os.path.isfile('uncertain_breakrate_rates.tab') and
-            os.path.isfile('uncertain_breakrate.log')):
-        uncertain_estimates = br.break_rate(uncertain_adj_coords, output='uncertain_breakrate', threads=nthreads)
+    log.write('Calculating Uncertain (True or False qbreaks) Break Rates:\n')
+    if not (os.path.isfile(uncertain_out+'_rates.tab') and
+            os.path.isfile(uncertain_out+'.log')):
+        uncertain_estimates = br.break_rate(uncertain_adj_coords, output=uncertain_out, threads=nthreads)
     else:
-        uncertain_estimates = pd.read_csv('uncertain_breakrate_rates.tab', sep='\t')
-    log.write(open('uncertain_breakrate.log', 'r').read())
+        uncertain_estimates = pd.read_csv(uncertain_out+'_rates.tab', sep='\t')
+    log.write(open(uncertain_out+'.log', 'r').read())
     
-    log.write('\nCalculating Unambiguous (Confirmed) Break Rates:\n')
-    if not (os.path.isfile('certain_breakrate_rates.tab') and
-            os.path.isfile('certain_breakrate.log')):
-        certain_estimates = br.break_rate(certain_adj_coords, output='certain_breakrate', threads=nthreads)
+    log.write('\nCalculating Certain (True qbreaks only) Break Rates:\n')
+    if not (os.path.isfile(certain_out+'_rates.tab') and
+            os.path.isfile(certain_out+'.log')):
+        certain_estimates = br.break_rate(certain_adj_coords, output=certain_out, threads=nthreads)
     else:
-        certain_estimates = pd.read_csv('certain_breakrate_rates.tab', sep='\t')
-    log.write(open('certain_breakrate.log', 'r').read())
+        certain_estimates = pd.read_csv(certain_out+'_rates.tab', sep='\t')
+    log.write(open(certain_out+'.log', 'r').read())
 
-    if not os.path.isfile('uncertain_rate_windows.txt'):
+    if not os.path.isfile(uncertain_out+'_rate_windows.txt'):
         uncertain_rate_windows = rate_windows(uncertain_estimates, N, step=step, window_size=window_size)
-        uncertain_rate_windows.to_csv('uncertain_rate_windows.txt', sep='\t', index=False)
+        uncertain_rate_windows.to_csv(uncertain_out+'_rate_windows.txt', sep='\t', index=False)
     else:
-        uncertain_rate_windows = pd.read_csv('uncertain_rate_windows.txt', sep='\t', header=0)
+        uncertain_rate_windows = pd.read_csv(uncertain_out+'_rate_windows.txt', sep='\t', header=0)
 
-    if not os.path.isfile('certain_rate_windows.txt'):
+    if not os.path.isfile(certain_out+'_rate_windows.txt'):
         certain_rate_windows = rate_windows(certain_estimates, N, step=step, window_size=window_size)
-        certain_rate_windows.to_csv('certain_rate_windows.txt', sep='\t', index=False)
+        certain_rate_windows.to_csv(certain_out+'_rate_windows.txt', sep='\t', index=False)
     else:
-        certain_rate_windows = pd.read_csv('certain_rate_windows.txt', sep='\t', header=0)
+        certain_rate_windows = pd.read_csv(certain_out+'_rate_windows.txt', sep='\t', header=0)
 
     # Mask Centromeres
     if centromeres:
@@ -193,6 +201,11 @@ def map_breakpoints(os_tab):
     ref_adj, rheads, rtails = get_adjacencies('rchr', rsort)
     qsort = os_tab.sort_values(['qstart_abs'])
     qer_adj, qheads, qtails = get_adjacencies('qchr', qsort)
+
+    # OS are in [start, end] format on the nucleotides
+    # Break points are between nucleotides - on the bonds
+    # OSs of [1,4][5,8][10,15] would make 2 breakpoints at bonds 4, and 8/9
+    # Breakpoints should be [4,5)[8,10)
 
     # (start, end, True/False)
     # True coords are definitely breakpoints

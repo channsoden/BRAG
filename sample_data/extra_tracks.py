@@ -8,7 +8,7 @@ from BRAG_parsers import scaffold_table
 from fasta_tools import fasta_to_dict
 from gff_tools import gff_table
 
-def windowize(genome, step=7000, window_size=35000):
+def windowize(genome, step=4000, window_size=20000):
     start = 0
     end = start + window_size
     genlen = len(genome)
@@ -53,9 +53,9 @@ def gene_density(annotation, window):
     start, end = window
     window_size = float(end - start)
     overlapping = annotation.loc[(annotation.start < end) & (annotation.end > start)]
-    start = np.full( len(overlapping), start)
+    start = np.full( len(overlapping), start, dtype=int)
     starts = np.maximum(start, overlapping.start)
-    end = np.full( len(overlapping), end)
+    end = np.full( len(overlapping), end, dtype=int)
     ends = np.minimum(end, overlapping.end)
     overlap = np.sum(ends - starts)
     return overlap / window_size

@@ -19,12 +19,18 @@ class ref:
 def set_reference(refnode, genome_length):
     ref.tree = refnode.get_tree_root()
     branches = list(ref.tree.iter_descendants())
-    ref.tree_len = sum([n.dist for n in branches])
+    ref.tree_len = 0
+    i = 1
+    for n in branches:
+        ref.tree_len += n.dist
+        if not n.name:
+            n.name = 'branch_{}'.format(i)
+            i += 1
     ref.refnode = refnode
     ref.N = genome_length
     ref.masks = {branch:tree_mask(branch) for branch in branches}
 
-class timer(object):
+class timer:
     def __init__(self):
         self.start = time.time()
         self.last = self.start
@@ -36,7 +42,7 @@ class timer(object):
         self.last = now
         return '{:.3f} seconds elapsed ({:.3f} total)'.format(step, total)
     
-class tree_mask(object):
+class tree_mask:
     def __init__(self, branch):
         descendants = list(branch.iter_descendants())
         if ref.refnode in descendants:
@@ -57,10 +63,13 @@ class tree_mask(object):
         self.minL = min_mask_length
         self.maxL = max_mask_length
         
-class qbreak(object):
+class QBreak:
     # A qbreak a region on the reference between two colinear sequences
     # that are adjacent in the reference and not adjacent in the query.
     # A qbreak is a vertex in the interval graph, and it's query is it's color.
+
+    # qbreak coordinates are [start, end) on nucleotide sequence
+    # So broken bond could any between start and end sites
     def __init__(self, query, start, end, certainty):
         self.query = query
         self.start = start
@@ -68,45 +77,52 @@ class qbreak(object):
         self.certain = certainty
         self.cliques = set()
         self.tbreaks = set()
-        self.placed = False
+
+    def __hash__(self):
+        return hash((self.query, self.start, self.end))
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return (self.query, self.start, self.end) == (other.query, other.start, other.end)
+        return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, self.__class__):
+            return not self.__eq__(other)
+        return NotImplemented
 
     def __repr__(self):
         return '{}({},{})'.format(self.query, self.start, self.end)
 
-
-    def place(self, tbreak):
-        self.tbreaks.add(tbreak)
-
-    def reset(self):
-        assert not self.placed, 'should not reset placed qbreaks'
-        self.tbreaks = set()
-        self.cliques = set()
-
-class clique(object):
+class Clique(frozenset):
     # A clique is a set of qbreaks that are all adjacent in the interval graph.
     # A clique is a contiguous region of the reference that has the same pattern of qbreaks,
     # i.e. a region of the reference where some qbreaks overlap.
-    def __init__(self, start, end, qbreaks):
-        self.start = start
-        self.end = end
-        self.qbreaks = qbreaks
-        self.tbreaks = self.find_tbreaks()
+    def __new__(cls, qbreaks):
+        return super().__new__(cls, qbreaks)
 
-        [qb.cliques.add(self) for qb in self.qbreaks]
+    def __init__(self, qbreaks):
+        self.place()
+        self.tbreaks = self.partition_tbreaks()
+        [qb.cliques.add(self) for qb in self]
 
     def __repr__(self):
-        return '{}({},{})'.format(len(self.qbreaks), self.start, self.end)
+        return '{}({},{})'.format(len(self), self.start, self.end)
 
-    def find_tbreaks(self):
-        # Returns most parsimonious locations of state transitions on tree (tbreaks)
-        # given list of leaf nodes (self.qbreaks) that don't share the state of refnode,
+    def place(self):
+        # Place the clique in the genome
+        # Coordinates of qbreaks are [start, end)
+        # So coordinates of a clique are also [start, end)
+        self.start = max([qb.start for qb in self])
+        self.end = min([qb.end for qb in self])
+        self.size = self.end - self.start
+        assert self.size >= 1, 'clique of size < 1 indicates invalid clique'
+
+    def partition_tbreaks(self):
+        # Finds most parsimonious locations of state transitions on tree (tbreaks)
+        # given list of leaf nodes (self) that don't share the state of refnode,
         # assuming no convergent evolution to the reference state is possible.
-        for i, qb in enumerate(self.qbreaks):
-            if type(qb) == type(None):
-                print('this qb is a None:', i)
-                print(len(self.qbreaks))
-                print(len([qb for qb in self.qbreaks if type(qb) == type(None)]))
-        different = set([ref.tree&qb.query for qb in self.qbreaks])
+        different = set([ref.tree&qb.query for qb in self])
         same = set(ref.tree.get_leaves()) - different # Leaves that share the state of refnode
         
         # Find the origin of the state of the reference
@@ -117,15 +133,15 @@ class clique(object):
             origin = origin.up
             ori_leaves = origin.get_leaves()
         ori_leaves = set(ori_leaves)
-    
+        
         if origin is ref.tree:
             # reference type is ancestral
             broken = []
             evidence = []
         else:
             broken = [origin]
-            evidence = [link_qbreaks(self.qbreaks, different - ori_leaves)]
-        
+            evidence = [link_qbreaks(self, different - ori_leaves)]
+            
         # Find state transitions underneath the origin
         different = different & ori_leaves
         while different:
@@ -141,61 +157,47 @@ class clique(object):
                     # node = None, we hit the root and tried to go up
                     break
             broken.append(broken_node)
-            evidence.append(link_qbreaks(self.qbreaks, clade))
+            evidence.append(link_qbreaks(self, clade))
             different = different - clade
-    
-        assert set([qb for qbs in evidence for qb in qbs]) == set(self.qbreaks), 'not all qbreaks are used as evidence'
             
-        tbreaks = set([tbreak(self, qbs, node) for qbs, node in zip(evidence, broken)])
+        assert set([qb for qbs in evidence for qb in qbs]) == self, 'not all qbreaks are used as evidence'
+        
+        tbreaks = [TBreak(qbs, node, self) for qbs, node in zip(evidence, broken)]
         return tbreaks
-    
-    def edist(self):
-        min_mask_lens = [ref.masks[tb.branch].minL for tb in self.tbreaks]
-        max_mask_lens = [ref.masks[tb.branch].maxL for tb in self.tbreaks]
-        min_edist = ref.tree_len - sum(max_mask_lens)
-        max_edist = ref.tree_len - sum(min_mask_lens)
-        return min_edist, max_edist
 
 def link_qbreaks(qbreaks, leaves):
     # Link the broken branches to the qbreaks that support them
     leaf_names = [l.name for l in leaves]
     return [qb for qb in qbreaks if qb.query in leaf_names]
-    
-class tbreak(object):
+
+class TBreak(Clique):
     # Tree-consistent Break
     # A tbreak is a clique of qbreaks whose queries make up a monophyletic clade.
     # A tbreak's branch is the branch leading to the MRCA of the tbreak.
-    def __init__(self, clique, qbreaks, branch):
-        self.qbreaks = set(qbreaks)
+    def __new__(cls, qbreaks, branch, parent):
+        return super().__new__(cls, qbreaks)
+
+    def __init__(self, qbreaks, branch, parent):
         self.branch = branch
-        self.cliques = set([clique])
+        self.clique = parent
+        self.place()
+        [qb.tbreaks.add(self) for qb in self]
 
-        [qb.tbreaks.add(self) for qb in self.qbreaks]
+    def __repr__(self):
+        return '{}({},{})'.format(self.branch.name, self.start, self.end)
 
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            sort_key = lambda qb: qb.start
-            return sorted(self.qbreaks, key=sort_key) == sorted(other.qbreaks, key=sort_key)
-        return NotImplemented
-    
-    def __ne__(self, other):
-        if isinstance(other, self.__class__):
-            return not self.__eq__(other)
-        return NotImplemented
+    def set_likelihood(self, block_length):
+        self.likelihood = block_length / self.size
 
     def discard(self):
-        [qb.tbreaks.remove(self) for qb in self.qbreaks]
-        [clq.tbreaks.remove(self) for clq in self.cliques]
+        # Remove the tbreak from it's qbreaks and parent clique
+        # Needed to maintain duality when non-maximal tbreaks are tossed
+        [qb.tbreaks.remove(self) for qb in self]
+        self.clique.tbreaks.remove(self)
 
-    def has_any_qb(self, qbreaks):
-        for qb in self.qbreaks:
-            if qb in qbreaks:
-                return True
-        return False
-
-    def set_likelihood(self, block_length, size):
-        self.likelihood = block_length / size
-
+    def partition_tbreaks(self):
+        # Override the clique method to avoid sensless recurrsion
+        return None
 
 def break_rate(adj_coords, output=None, threads=1):
     # Calculates the rearrangement rate at all break points
@@ -220,7 +222,9 @@ def break_rate(adj_coords, output=None, threads=1):
     max_cliques = find_maximal_cliques(qbreaks)
     logfh.write( '{}\tmaximal_cliques\t{}\n'.format(len(max_cliques), clock.report()) )
 
-    tbreaks = merge_tbreaks(max_cliques)
+    # Unique tbreaks are linked to qbreaks in sets.
+    # tbreaks in cliques > tbreaks in qbreaks due to duplicates.
+    tbreaks = frozenset([tb for qb in qbreaks for tb in qb.tbreaks])
     logfh.write( '{}\ttbreaks\t{}\n'.format(len(tbreaks), clock.report()) )
     
     sub_graphs = find_subgraphs(tbreaks)
@@ -266,58 +270,39 @@ def break_rate(adj_coords, output=None, threads=1):
 
 
 def merge_alignments(adj_coords):
-    qbreaks = set([qbreak(query, *coord)
+    qbreaks = set([QBreak(query, *coord)
                    for query, coords in adj_coords
                    for coord in coords])
     return qbreaks
 
 def find_maximal_cliques(qbreaks):
     # Find all maximal cliques in the interval graph of qbreaks.
-    edges = [(ref.N, None)]
+    # coordinates of qbreaks are [start, end)
+    edges = []
     for qb in qbreaks:
-        edges.append((qb.start, qb))
-        edges.append((qb.end, qb))
-    edges.sort(key=lambda edge: edge[0])
+        edges.append((qb.start, 1, qb))
+        edges.append((qb.end, 0, qb))
+    edges.sort(key=lambda edge: edge[0:2])
 
-    last_removal = False
     open_qbreaks = set()
-    cliques = [clique(0, edges[0][0], open_qbreaks)]
-    for i, edge in enumerate(edges[:-1]):
-        position, qb = edge
-        clique_length = edges[i+1][0] - position
-        try:
-            open_qbreaks.remove(qb)
-            if clique_length == 0 or last_removal:
-                continue
-            p = clique(position, position+clique_length, open_qbreaks)
-            cliques.append(p)
-            last_removal = True
-        except KeyError:
+    cliques = []
+    for i, edge in enumerate(edges):
+        position, isstart, qb = edge
+        if isstart:
             open_qbreaks.add(qb)
-            last_removal = False
-
-    cliques.append(clique(edges[-2][0], edges[-1][0], []))
+            next_edge = edges[i+1]
+            if not next_edge[1]:
+                # next edge is an end, so record this clique
+                p = Clique(open_qbreaks)
+                cliques.append(p)
+        else:
+            open_qbreaks.remove(qb)
 
     return cliques
 
-def merge_tbreaks(cliques):
-    # Find equivalent tbreaks and keep only one.
-    tbreaks = cliques[0].tbreaks
-    for i, clique in enumerate(cliques[:-1]):
-        nxt = cliques[i+1]
-        branches = set([tb.branch for tb in clique.tbreaks])
-        nxt_branches = set([tb.branch for tb in nxt.tbreaks])
-        duplicates = branches & nxt_branches
-        new_tbs = [tb for tb in clique.tbreaks if tb.branch in duplicates]
-        old_tbs = [tb for tb in nxt.tbreaks if tb.branch in duplicates]
-        [old_tb.discard() for old_tb in old_tbs]
-        tbreaks.update(nxt.tbreaks)
-        nxt.tbreaks.update(new_tbs)
-    return tbreaks
-
 def find_subgraphs(tbreaks):
     # Find all connected subgraphs in the QT graph.
-    qbs = set([max(tb.qbreaks, key=lambda qb: len(qb.tbreaks)) for tb in tbreaks])
+    qbs = set([max(tb, key=lambda qb: len(qb.tbreaks)) for tb in tbreaks])
     tb_subgraphs = []
     qb_subgraphs = []
     while qbs:
@@ -338,7 +323,7 @@ def follow_connections(qbreak):
         tbs.update(*[qb.tbreaks for qb in unvisited])
         qbs_visited.update(unvisited)
         unvisited = tbs - tbs_visited
-        qbs.update(*[tb.qbreaks for tb in unvisited])
+        qbs.update(*[tb for tb in unvisited])
         tbs_visited.update(unvisited)
     return qbs, tbs
 
@@ -352,9 +337,10 @@ def maximize_tbreaks(tbreaks):
     subsets = set()
     for tb1 in tbreaks:
         for tb2 in tbreaks:
-            if tb1.qbreaks < tb2.qbreaks:
+            if tb1 < tb2:
                 subsets.add(tb1)
-    [tb.discard() for tb in subsets]
+                tb1.discard()
+                break
     return tbreaks - subsets
 
 def minimize_qbreaks(qbreaks):
@@ -365,7 +351,7 @@ def minimize_qbreaks(qbreaks):
         for qb2 in qbreaks:
             if qb1.tbreaks < qb2.tbreaks:
                 non_minimal.add(qb2)
-    # [tb.qbreaks.remove(qb) for qb in non_minimal for tb in qb.tbreaks]
+    # [tb.remove(qb) for qb in non_minimal for tb in qb.tbreaks]
     return qbreaks - non_minimal
     
 def remove_simplicial(qbreaks):
@@ -390,8 +376,8 @@ def minimum_covers(qbreaks, covered_qbreaks, accepted_tbreaks):
         covers = []
         qb = qbreaks.pop()
         for tb in qb.tbreaks:
-            remaining_qbreaks = qbreaks - tb.qbreaks
-            new_covered = covered_qbreaks | tb.qbreaks
+            remaining_qbreaks = qbreaks - tb
+            new_covered = covered_qbreaks | tb
             new_accepted = accepted_tbreaks | {tb}
             partial_covers = minimum_covers(remaining_qbreaks, new_covered, new_accepted)
             covers.extend(partial_covers)
@@ -414,36 +400,36 @@ def count_tbreaks(tbreaks, solutions, logfh=sys.stdout):
     tbs_in_sols = {tb:(i, j) for i, sol in enumerate(solutions) for j, cov in enumerate(sol) for tb in cov}
 
     # Find each block formed by overlapping tbreaks.
+    # coordinates of tbreaks are [start, end)
     edges = [(ref.N, None, None)]
     for tb in tbreaks:
-        start, end = place_tb(tb)
-        edges.append((start, tb, None))
-        edges.append((end, tb, None))
+        edges.append((tb.start, tb, None))
+        edges.append((tb.end, tb, None))
     for tb in list(tbs_in_sols.keys()):
-        start, end = place_tb(tb)
-        edges.append((start, tb, tbs_in_sols[tb]))
-        edges.append((end, tb, tbs_in_sols[tb]))
-    edges.sort()
+        edges.append((tb.start, tb, tbs_in_sols[tb]))
+        edges.append((tb.end, tb, tbs_in_sols[tb]))
+    edges.sort(key = lambda edge: edge[0])
     
-    open_tbreaks = []
-    open_solutions = [[[] for cov in sol] for sol in solutions]
+    open_tbreaks = set()
+    open_solutions = [[set() for cov in sol] for sol in solutions]
     # partiton = (start, end, length, [counts], [likelihoods], [tree_lengths])
     count_blocks = [(0, edges[0][0], edges[0][0], [0], [1], [ref.tree_len])]
     for i, edge in enumerate(edges[:-1]):
         position, tb, coord = edge
-        end_pos = edges[i+1][0]
+        next_edge = edges[i+1]
+        end_pos = next_edge[0]
         block_length = float(end_pos - position)
         if coord:
             i, j = coord
             try:
                 open_solutions[i][j].remove(tb)
-            except ValueError:
-                open_solutions[i][j].append(tb)
+            except KeyError:
+                open_solutions[i][j].add(tb)
         else:
             try:
                 open_tbreaks.remove(tb)
-            except ValueError:
-                open_tbreaks.append(tb)
+            except KeyError:
+                open_tbreaks.add(tb)
 
         if block_length == 0:
             continue
@@ -461,8 +447,8 @@ def count_tbreaks(tbreaks, solutions, logfh=sys.stdout):
         
         if open_tbreaks or non_empty_solutions:
             # set likelihood of tbreaks occuring within this block
-            [tb.set_likelihood(block_length, tb.size) for tb in open_tbreaks]
-            [tb.set_likelihood(block_length, tb.size) for sol in non_empty_solutions for cov in sol for tb in cov]
+            [tb.set_likelihood(block_length) for tb in open_tbreaks]
+            [tb.set_likelihood(block_length) for sol in non_empty_solutions for cov in sol for tb in cov]
 
             cover_lengths = [[len(cov) for cov in sol] for sol in non_empty_solutions]
             num_placement_combos = sum([2 ** sum(combo) for combo in itertools.product(*cover_lengths)])
@@ -471,7 +457,8 @@ def count_tbreaks(tbreaks, solutions, logfh=sys.stdout):
             
             solution_combos = [x for x in itertools.product(*non_empty_solutions)]
             for s_combo in solution_combos:
-                s_combo_tbreaks = open_tbreaks + [tb for cover in s_combo for tb in cover]
+                open_combos = set([tb for cover in s_combo for tb in cover])
+                s_combo_tbreaks = open_tbreaks | open_combos
                 
                 # likelihood = P(these solutions are true) * P(the breaks occured in this block, rather than another location)
                 # likelihood = P(combo | solutions) * P(placements | tbreaks)
@@ -512,12 +499,6 @@ def count_tbreaks(tbreaks, solutions, logfh=sys.stdout):
         count_blocks.append(part)
         
     return count_blocks
-
-def place_tb(tb):
-    start = max([qb.start for qb in tb.qbreaks])
-    end = min([qb.end for qb in tb.qbreaks])
-    tb.size = end - start
-    return start, end
 
 def estimate_rate(start, end, length, counts, likes, tree_lengths, rates):
     nucleotide_times = [length * tl for tl in tree_lengths]

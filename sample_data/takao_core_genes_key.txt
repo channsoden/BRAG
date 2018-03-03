@@ -1,0 +1,6 @@
+1	N_Evol	N. crassa
+2	F_Evol	Pezizomycotina
+3	A_Evol	Ascomycota
+4	B_Evol	Dikarya
+5	E_Evol	Cellular Life
+6	O_Evol	Others

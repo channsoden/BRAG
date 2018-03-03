@@ -45,8 +45,8 @@ def read_centromeres(cen_file, chromosomes):
     return centromeres
 
 
-certain = pd.read_csv('certain_rate_windows.txt', sep='\t', header=0, index_col=0)
-uncertain = pd.read_csv('uncertain_rate_windows.txt', sep='\t', header=0, index_col=0)
+certain = pd.read_csv('certain_rate_windows.txt', sep='\t', header=0)
+uncertain = pd.read_csv('uncertain_rate_windows.txt', sep='\t', header=0)
 # get the scaffold lengths
 scaffolds = scaffold_table('genomes/Neurospora-crassa_OR74A_v12_fixed.fasta')
 # calculate the coordinates of left and right arms of the chromosomes
@@ -162,6 +162,7 @@ highcounts, label_order = core_enrichment(high_geneIDs, core_genes)
 label_order = label_order[::-1]
 diffcounts = [lowcounts[label]-highcounts[label] for label in label_order]
 
+"""
 fig = plt.figure(figsize = (6, 6))
 ax = fig.add_subplot(111)
 bars = pretty_bar(ax, diffcounts, label_order, horizontal=True)
@@ -197,7 +198,7 @@ print('chi2', chi2)
 print('pval', pval)
 print('dof', dof)
 print()
-
+"""
 
 # is break rate correlated with distance to telomere?
 
