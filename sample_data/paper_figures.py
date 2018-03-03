@@ -45,8 +45,8 @@ def read_centromeres(cen_file, chromosomes):
     return centromeres
 
 
-certain = pd.read_csv('certain_rate_windows.txt', sep='\t', header=0)
-uncertain = pd.read_csv('uncertain_rate_windows.txt', sep='\t', header=0)
+certain = pd.read_csv('small_windows_certain_rate_windows.txt', sep='\t', header=0)
+uncertain = pd.read_csv('small_windows_uncertain_rate_windows.txt', sep='\t', header=0)
 # get the scaffold lengths
 scaffolds = scaffold_table('genomes/Neurospora-crassa_OR74A_v12_fixed.fasta')
 # calculate the coordinates of left and right arms of the chromosomes
@@ -60,68 +60,51 @@ scaf_adjustment = annotation.seqname.replace(abs_positions)
 annotation['abs_start'] = annotation.start + scaf_adjustment
 annotation['abs_end'] = annotation.end + scaf_adjustment
 
+def top_regions(data, annotation, top_size, outfile, ascending=False):
+    data = data.sort_values('E', ascending=ascending)
+    i = 0
+    total_length = 0
+    while total_length < top_size:
+        i += 1
+        top_windows = data.head(i)
+        top_regions, total_length = collapse_regions(top_windows)
+
+    fh = open(outfile, 'w')
+    geneIDs = set()
+    for start, end, length in top_regions:
+        features = annotation.loc[(annotation.abs_start <= end) & (annotation.abs_end >= start)]
+        genes = set(features.attributes)
+        geneIDs |= set([gene.split()[1][1:-2] for gene in genes])
+        fh.write( 'Region {}-{} ({} bp): {} genes\n'.format(start, end, length, len(genes)) )
+        for gene in genes:
+            fh.write( '{}\n'.format(gene) )
+        fh.write('\n')
+    fh.close()
+
+    return geneIDs, total_length
+
+def collapse_regions(data):
+    data = data.sort_values('start')
+    regions = []
+    total_length = 0
+    region_start = 0
+    region_end = 0
+    for index, row in data.iterrows():
+        if row.start > region_end:
+            region_length = region_end - region_start
+            total_length += region_length
+            regions.append( (region_start, region_end, region_length) )
+            region_start = row.start
+        region_end = row.end
+    regions = regions[1:]
+    return regions, total_length
+
+most_size  = 2000000
 # Conserved regions
-uncertain.sort_values('start', inplace=True)
-conserved = uncertain.loc[uncertain.E == 0]
-
-low_regions = []
-region_start = 0
-region_end = 0
-for index, row in conserved.iterrows():
-    if row.start > region_end:
-        low_regions.append( (region_start, region_end, region_end - region_start) )
-        region_start = row.start
-    region_end = row.end
-low_regions = low_regions[1:]
-
-lowfh = open('conserved_regions.txt', 'w')
-conserved_length = 0
-low_geneIDs = set()
-for start, end, length in low_regions:
-    conserved_length += int(length)
-    features = annotation.loc[(annotation.abs_start <= end) & (annotation.abs_end >= start)]
-    genes = set(features.attributes)
-    low_geneIDs |= set([gene.split()[1][1:-2] for gene in genes])
-    lowfh.write( 'Region {}-{} ({} bp): {} genes\n'.format(start, end, length, len(genes)) )
-    for gene in genes:
-        lowfh.write( '{}\n'.format(gene) )
-    lowfh.write('\n')
-lowfh.close()
-print('{} genes found in {} bp of unbroken regions'.format(len(low_geneIDs), conserved_length))
-
-# Most rapidly breaking regions
-certain = certain.sort_values('E', ascending=False)
-# get the top regions of the same length as the conserved regions
-i = 0
-high_length = 0
-while high_length < conserved_length:
-    i += 1
-    high_windows = certain.head(i)
-    high_length = np.sum( high_windows.end - high_windows.start )
-high_windows = high_windows.sort_values('start')
-
-high_regions = []
-region_start = 0
-region_end = 0
-for index, row in high_windows.iterrows():
-    if row.start > region_end:
-        high_regions.append( (region_start, region_end, region_end - region_start) )
-        region_start = row.start
-    region_end = row.end
-high_regions = high_regions[1:]
-
-highfh = open('rapid_breakers.txt', 'w')
-high_geneIDs = set()
-for start, end, length in high_regions:
-    features = annotation.loc[(annotation.abs_start <= end) & (annotation.abs_end >= start)]
-    genes = set(features.attributes)
-    high_geneIDs |= set([gene.split()[1][1:-2] for gene in genes])
-    highfh.write( 'Region {}-{} ({} bp): {} genes\n'.format(start, end, length, len(genes)) )
-    for gene in genes:
-        highfh.write( '{}\n'.format(gene) )
-    highfh.write('\n')
-highfh.close()
-print('{} genes found in {} bp of most rapidly breaking regions'.format(len(high_geneIDs), high_length))
+low_genes, conserved_length = top_regions(certain, annotation, most_size, 'conserved_regions.txt', ascending=True)
+print('{} genes found in {} bp of conserved regions'.format(len(low_genes), conserved_length))
+high_genes, fragile_length = top_regions(certain, annotation, most_size, 'fragile_regions.txt', ascending=False)
+print('{} genes found in {} bp of fragile regions'.format(len(high_genes), fragile_length))
 
 def parse_core_genes(gene_table, key_file):
     gene_table = pd.read_csv(gene_table, delimiter='\t', header=0)
@@ -157,12 +140,12 @@ def core_enrichment(genes, core_genes):
 # Compare core gene content of high and low genes
 print()
 core_genes = parse_core_genes('takao_core_genes.tsv', 'takao_core_genes_key.txt')
-lowcounts, label_order = core_enrichment(low_geneIDs, core_genes)
-highcounts, label_order = core_enrichment(high_geneIDs, core_genes)
+lowcounts, label_order = core_enrichment(low_genes, core_genes)
+highcounts, label_order = core_enrichment(high_genes, core_genes)
 label_order = label_order[::-1]
 diffcounts = [lowcounts[label]-highcounts[label] for label in label_order]
 
-"""
+
 fig = plt.figure(figsize = (6, 6))
 ax = fig.add_subplot(111)
 bars = pretty_bar(ax, diffcounts, label_order, horizontal=True)
@@ -171,7 +154,7 @@ direct_labels(ax, list(range(len(diffcounts))),
               [((n<0)*2)-1 for n in diffcounts],
               altlabels=[highcounts[l] for l in label_order],
               horizontal=True)
-ax.set_xlim(-20, 140)
+ax.set_xlim(-105, 105)
 ax.set_xlabel('Conserved Genes - Fragile Genes')
 fig.savefig('core_gene_content')
 
@@ -185,8 +168,8 @@ print('{} genes have a published phylogenetic distribution'.format(sum(core_gene
 for category, number in list(core_genes_in_category.items()):
     print('{}\t{}'.format(number, category))
 
-print('{} / {} genes in conserved regions have published phylogenetic distribution'.format(sum(lowcounts.values()), len(low_geneIDs)))
-print('{} / {} genes in fragile regions have published phylogenetic distribution'.format(sum(highcounts.values()), len(high_geneIDs)))
+print('{} / {} genes in conserved regions have published phylogenetic distribution'.format(sum(lowcounts.values()), len(low_genes)))
+print('{} / {} genes in fragile regions have published phylogenetic distribution'.format(sum(highcounts.values()), len(high_genes)))
 print()
 
 distributions = [[lowcounts[label] for label in label_order],
@@ -198,7 +181,7 @@ print('chi2', chi2)
 print('pval', pval)
 print('dof', dof)
 print()
-"""
+
 
 # is break rate correlated with distance to telomere?
 
