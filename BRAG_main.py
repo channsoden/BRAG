@@ -14,6 +14,7 @@ from tree_tools import root, tree_order
 from BRAG_parsers import segment_tables
 from BRAG_figures import degrading_coverage, OS_length_hist, plot_break_rate, correlation_scatter, track_correlation
 import BRAG_estimation as br
+from BRAG_estimation import timer
 
 def main(tree, reference, outgroup, output, segment_files, seqs_files,
          step=7000, window_size=35000, nthreads=1, centromeres=None, tracks=None):
@@ -172,18 +173,6 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
                     step, output + '_brMap')
     log.write('BRAG Finished!\t{}\n'.format(clock.report()))
 
-class timer:
-    def __init__(self):
-        self.start = time.time()
-        self.last = self.start
-
-    def report(self):
-        now = time.time()
-        step = now - self.last
-        total = now - self.start
-        self.last = now
-        return '{:.3f} seconds elapsed ({:.3f} total)'.format(step, total)
-    
 def infer_reference(seqs_files):
     # The reference is the genome that appears in all the seqs files.
     # If there are multiple such genomes, or none, than something is wrong.
