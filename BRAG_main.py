@@ -51,10 +51,10 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     log.write('Mean coverage:\t{}\n'.format(coverage_stats.mean))
     log.write('Maximum coverage:\t{}\n'.format(coverage_stats.minmax[1]))
     log.write('SD coverage:\t{}\n'.format(coverage_stats.variance ** 0.5))
-    log.write('Cumulative coverage:\t{}\n\n'.format(cumulative_coverage(os_tabs, N)))
-    log.write(clock.report()+'\n')
+    log.write('Cumulative coverage:\t{}\n'.format(cumulative_coverage(os_tabs, N)))
+    log.write(clock.report()+'\n\n')
 
-    log.write('Plotting coverage of alignments and histograms of OS and qbreak lengths. . .')
+    log.write('Plotting coverage of alignments and histograms of OS and qbreak lengths. . .\n')
     degrading_coverage(coverages, os_tabs, N, output+'_coverage_survival_curve')
     hist_jobs = [(OS_length_hist, (reference, query, os_tab)) for query, rscaffolds, qscaffolds, os_tab in tables]
     mapPool(nthreads, hist_jobs)
@@ -103,9 +103,9 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
         certain_rate_windows.to_csv(certain_out+'_rate_windows.txt', sep='\t', index=False)
     else:
         certain_rate_windows = pd.read_csv(certain_out+'_rate_windows.txt', sep='\t', header=0)
-    log.write(clock.report()+'\n')
+    log.write('\n'+clock.report()+'\n\n')
 
-    log.write('Processing centromeres & extra data tracks, if applicable. . .')
+    log.write('Processing centromeres & extra data tracks, if applicable. . .\n')
     # Mask Centromeres
     if centromeres:
         centromeres = [list(map( int, line.split('#')[0].strip().split() ))
@@ -138,33 +138,33 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     log.write('\n')
     log.write('Plotting break rates calculated with "True" qbreaks ("certain", lower bound estimate)\n')
     log.write('against break rates calculated with "True" and "False" break rates ("uncertain:, upper bound estimate).\n')
-    log.write(output+'_uncertainty\n')
+    log.write('Output: '+output+'_uncertainty\n')
     indexer = (certain_rate_windows['E'] != uncertain_rate_windows['E']) & (uncertain_rate_windows['E'] != 0)
     model = correlation_scatter(certain_rate_windows['E'].loc[indexer],
                                 uncertain_rate_windows['E'].loc[indexer],
                                 output+'_uncertainty')
     same = (certain_rate_windows['E'] == uncertain_rate_windows['E']).sum()
     num_windows = len(certain_rate_windows)
-    log.write('{}/{} ({:.2f}%) windows have identical break rates'.format(same, num_windows, same/num_windows * 100))
+    log.write('{}/{} ({:.2f}%) windows have identical break rates\n'.format(same, num_windows, same/num_windows * 100))
     uncertain_over = (certain_rate_windows['E'] < uncertain_rate_windows['E']).sum()
-    report = '{}/{} ({:.2f}%) of non-identical windows have (True) < (True | False)'
+    report = '{}/{} ({:.2f}%) of non-identical windows have (True) < (True | False)\n'
     report = report.format(uncertain_over, num_windows - same, uncertain_over/(num_windows - same) * 100)
     log.write(report)
     mean_ratio = (certain_rate_windows['E'].loc[indexer] / uncertain_rate_windows['E'].loc[indexer]).mean()
-    log.write('Mean ratio of (True)/(True | False) when True != False: {}'.format(mean_ratio))
-    log.write('(True)/(True | False) = {:.4f}*(True | False) + {:.4f}; p={:.3E} R2={:.3E}'.format(model.slope, model.intercept, model.p_val, model.r2))
+    log.write('Mean ratio of (True)/(True | False) when True != False: {}\n'.format(mean_ratio))
+    log.write('(True)/(True | False) = {:.4f}*(True | False) + {:.4f}; p={:.3E} R2={:.3E}\n'.format(model.slope, model.intercept, model.p_val, model.r2))
     log.write(clock.report()+'\n')
     
     if track_labels:
         log.write('\n')
         log.write('Performing linear regression between extra data tracks and break rate.\n')
-        log.write(output+'_tracks-x-breakrate\n')
+        log.write('Output: '+output+'_tracks-x-breakrate\n')
         track_correlation(certain_rate_windows, tracks, track_labels, output+'_tracks-x-breakrate')
         log.write(clock.report()+'\n')
 
-    log.write('\n\n')
+    log.write('\n')
     log.write('Plotting break rates and extra tracks along the reference genome.\n')
-    log.write(output + '_brMap\n')
+    log.write('Output: '+output + '_brMap\n')
     plot_break_rate(N, queries, os_tabs,
                     certain_estimates, uncertain_estimates,
                     certain_rate_windows, uncertain_rate_windows,
