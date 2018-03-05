@@ -182,31 +182,31 @@ print('pval', pval)
 print('dof', dof)
 print()
 
+def multitest(df, chromosomes, track):
+    print('correlating {} with distance to telomere'.format(track))
+    # is break rate correlated with distance to telomere?
+    tests = telomere_correlations(df, chromosomes, track)
+    
+    # multiple testing correction for testing each chromosome arm independently
+    # use 'fdr_tsbh' for two stage fdr correction via Benjamini/Hochberg method
+    p_vals = [test.raw_slope_p for test in tests]
+    rejects, p_vals, bs, nonsense = smm.multipletests(p_vals, alpha=0.05, method='fdr_tsbh')
 
-# is break rate correlated with distance to telomere?
+    sig_tests = []
+    insig_tests = []
+    print('label\traw_p\tp\tslope\tintercept\tr_squared')
+    for test, pv, reject in zip(tests, p_vals, rejects):
+        test.p_val = pv
+        print('{}\t{:.2E}\t{:.2E}\t{:.2E}\t{:.2E}\t{:0.4f}'.format(test.label, test.raw_slope_p, pv, test.slope, test.intercept, test.r2))
+        if reject:
+            sig_tests.append(test)
+        else:
+            insig_tests.append(test)
 
-tests = telomere_correlations(certain, chromosomes, 'E')
-#tests.extend( telomere_correlations(uncertain, chromosomes, 'E') )
+    print('sig tests', len(sig_tests))
+    print('insig tests', len(insig_tests))
 
-# multiple testing correction for testing each chromosome arm independently
-# use 'fdr_tsbh' for two stage fdr correction via Benjamini/Hochberg method
-p_vals = [test.raw_slope_p for test in tests]
-rejects, p_vals, bs, nonsense = smm.multipletests(p_vals, alpha=0.05, method='fdr_tsbh')
-
-
-sig_tests = []
-insig_tests = []
-print('label\traw_p\tp\tslope\tintercept\tr_squared')
-for test, pv, reject in zip(tests, p_vals, rejects):
-    test.p_val = pv
-    print('{}\t{:.2E}\t{:.2E}\t{:.2E}\t{:.2E}\t{:0.4f}'.format(test.label, test.raw_slope_p, pv, test.slope, test.intercept, test.r2))
-    if reject:
-        sig_tests.append(test)
-    else:
-        insig_tests.append(test)
-
-print('sig tests', len(sig_tests))
-print('insig tests', len(insig_tests))
+    return tests
 
 def grid_plots(tests, outfile, logy=True):
     nplots = len(tests)
@@ -223,35 +223,11 @@ def grid_plots(tests, outfile, logy=True):
     fig.savefig(outfile, dpi=350)
     plt.close(fig)
 
+tests = multitest(certain, chromosomes, 'E')
 grid_plots(tests, 'brag_correlations')
 
-
-# is CRI correlated with distance to telomere?
-
-print('regression of CRI w/ telomere distance')
-
 extra_tracks = pd.read_csv('Ncra_extra_tracks.tsv', sep='\t', header=0)
-
-tests = telomere_correlations(extra_tracks, chromosomes, 'CRI')
-
-# multiple testing correction for testing each chromosome arm independently
-# use 'fdr_tsbh' for two stage fdr correction via Benjamini/Hochberg method
-p_vals = [test.raw_slope_p for test in tests]
-rejects, p_vals, bs, nonsense = smm.multipletests(p_vals, alpha=0.05, method='fdr_tsbh')
-
-
-sig_tests = []
-insig_tests = []
-print('label\traw_p\tp\tslope\tintercept\tr_squared')
-for test, pv, reject in zip(tests, p_vals, rejects):
-    test.p_val = pv
-    print('{}\t{:.2E}\t{:.2E}\t{:.2E}\t{:.2E}\t{:0.4f}'.format(test.label, test.raw_slope_p, pv, test.slope, test.intercept, test.r2))
-    if reject:
-        sig_tests.append(test)
-    else:
-        insig_tests.append(test)
-
-print('sig tests', len(sig_tests))
-print('insig tests', len(insig_tests))
-
+tests = multitest(extra_tracks, chromosomes, 'CRI')
 grid_plots(tests, 'CRI_correlations', logy=False)
+tests = multitest(extra_tracks, chromosomes, 'N. crassa')
+grid_plots(tests, 'species_specific_genes_telomeres', logy=False)

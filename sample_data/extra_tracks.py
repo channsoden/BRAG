@@ -60,6 +60,23 @@ def gene_density(annotation, window):
     overlap = np.sum(ends - starts)
     return overlap / window_size
 
+def parse_core_genes(gene_table, key_file):
+    gene_table = pd.read_csv(gene_table, delimiter='\t', header=0)
+    keyfh = open(key_file, 'r')
+    ranks = {}
+    better_labels = {}
+    for line in keyfh:
+        rank, code, description = line.strip().split('\t')
+        ranks[code] = int(rank)
+        better_labels[code] = description
+    gene_table['coreness'] = gene_table.ID30
+    gene_table.coreness.replace(ranks, inplace=True)
+    gene_table.ID30.replace(better_labels, inplace=True)
+    gene_table.sort_values('coreness', inplace=True)
+    gene_table = gene_table.loc[gene_table.coreness != 6] # Drop "other" rank
+    
+    return gene_table
+
 genome_file = 'genomes/Neurospora-crassa_OR74A_v12_fixed.fasta'
 fasta = open(genome_file, 'r').read()
 scaffolds = fasta[1:].split('>')
@@ -75,12 +92,21 @@ annotation['abs_start'] = annotation.start + scaf_adjustment
 annotation['abs_end'] = annotation.end + scaf_adjustment
 annotation.sort_values('abs_start', inplace=True)
 
+core_genes = parse_core_genes('takao_core_genes.tsv', 'takao_core_genes_key.txt')
+annotation['geneID'] = annotation.attributes.str.split(expand=True)[1].str.slice(1,-2)
+spsp = core_genes.loc[core_genes.coreness == 1].Broad7_geneID
+alllife = core_genes.loc[core_genes.coreness == 5].Broad7_geneID
+
 protein_coding = annotation.loc[annotation.feature == 'CDS']
 protein_coding = flatten(protein_coding)
 expressed = annotation.loc[annotation.feature == 'exon']
+spsp = expressed.loc[expressed['geneID'].isin(spsp)]
+alllife = expressed.loc[expressed['geneID'].isin(alllife)]
 expressed = flatten(expressed)
+spsp = flatten(spsp)
+alllife = flatten(alllife)
 
-columns = ['start', 'end', 'GC', 'CRI', 'cds_density', 'exon_density']
+columns = ['start', 'end', 'GC', 'CRI', 'cds_density', 'exon_density', 'N. crassa', 'Cellular Life']
 tracks = {column:[] for column in columns}
 for window in windowize(genome):
     seg = genome[slice(*window)]
@@ -91,6 +117,8 @@ for window in windowize(genome):
     tracks['CRI'].append( CRI(seg) )
     tracks['cds_density'].append( gene_density(protein_coding, window) )
     tracks['exon_density'].append( gene_density(expressed, window) )
+    tracks['N. crassa'].append( gene_density(spsp, window) )
+    tracks['Cellular Life'].append( gene_density(alllife, window) )
 
 tracks = pd.DataFrame(tracks)
 tracks.to_csv('Ncra_extra_tracks.tsv', sep='\t', columns = columns, index=False)
