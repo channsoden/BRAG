@@ -1,6 +1,7 @@
 # Download genomes from Open Science Framework
-#wget -O genomes.tar.gz https://osf.io/vmkc8/?action=download
-#tar -xzf genomes.tar.gz
+echo "Downloading genomes"
+wget -O genomes.tar.gz https://osf.io/vmkc8/?action=download
+tar -xzf genomes.tar.gz
 
 export PYTHONPATH=$PYTHONPATH:../hannsoden-bioinformatics:..
 
@@ -12,3 +13,6 @@ echo "Running BRAG"
 
 echo "Generating figures from BRAG output"
 python paper_figures.py
+
+echo "Bundling results into ./results"
+python bundle_results.py
