@@ -8,7 +8,9 @@ import os
 from glob import glob
 
 # List input and configuration files.
-exclude = ['alignments',
+exclude = ['genomes',
+           'genomes.tar.gz',
+           'alignments',
            'conserved_genes.py',
            'export_results.py',
            'extra_tracks.py',
