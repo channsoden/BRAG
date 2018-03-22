@@ -23,7 +23,7 @@ exclude = ['alignments',
 if not os.path.isdir('results'):
     os.mkdir('results')
 
-files = glob.glob('./*')
+files = [f[2:] for f in glob('./*')]
 for f in files:
     if f not in exclude:
-        os.rename(f, './results'+f[1:])
+        os.rename(f, './results/'+f)

@@ -36,7 +36,7 @@ def OS_length_hist(reference, query, os_tab):
 
 def my_hist(ax, series):
     bins = np.logspace(1, np.log10(series.max()), num=50)
-    values, bins, patches = ax.hist(series, bins=bins, normed=True, color='grey', edgecolor='none')
+    values, bins, patches = ax.hist(series, bins=bins, density=True, color='grey', edgecolor='none')
     ax.set_xlim(series.min(), series.max())
     ax.set_xscale('log')
 
