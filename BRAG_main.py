@@ -159,7 +159,8 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
         log.write('\n')
         log.write('Performing linear regression between extra data tracks and break rate.\n')
         log.write('Output: '+output+'_tracks-x-breakrate\n')
-        track_correlation(certain_rate_windows, tracks, track_labels, output+'_tracks-x-breakrate')
+        track_results = track_correlation(certain_rate_windows, tracks, track_labels, output+'_tracks-x-breakrate')
+        log.write(track_results.summary().as_text()+'\n')
         log.write(clock.report()+'\n')
 
     log.write('\n')

@@ -30,17 +30,17 @@ class ref:
 
 def set_reference(refnode, genome_length):
     ref.tree = refnode.get_tree_root()
-    branches = list(ref.tree.iter_descendants())
+    ref.branches = list(ref.tree.iter_descendants())
     ref.tree_len = 0
     i = 1
-    for n in branches:
+    for n in ref.branches:
         ref.tree_len += n.dist
         if not n.name:
             n.name = 'branch_{}'.format(i)
             i += 1
     ref.refnode = refnode
     ref.N = genome_length
-    ref.masks = {branch:tree_mask(branch) for branch in branches}
+    ref.masks = {branch:tree_mask(branch) for branch in ref.branches}
     
 class tree_mask:
     def __init__(self, branch):
@@ -266,6 +266,12 @@ def break_rate(adj_coords, output=None, threads=1):
     rate_table.to_csv(rate_table_file, sep='\t')
     logfh.write( 'break rate estimates written to {}\t{}\n'.format(rate_table_file, clock.report()) )
 
+    logfh.write( 'counting tbreaks by branch\t{}\n'.format(clock.report()) )
+    tb_tree_file = output+'_tbreakTree'
+    tb_tree = count_tbreaks_on_branches(essential_tbreaks, solutions, tb_tree_file)
+    logfh.write( 'tree with tbreak counts as branch distances written to {}.nwk\n'.format(tb_tree_file) )
+    logfh.write( 'tree with tbreak counts scaled by branch distances written to {}_scaled.nwk\t{}\n'.format(tb_tree_file, clock.report()) )
+
     return rate_table
 
 
@@ -385,7 +391,6 @@ def minimum_covers(qbreaks, covered_qbreaks, accepted_tbreaks):
         covers = [cover for cover in covers if len(cover) == min_len]
         return covers
 
-
 def count_tbreaks(tbreaks, solutions, logfh=sys.stdout):
     # For each block formed by overlapping tbreaks:
     # Iterates through all possible tbreaks that could have occured in each region,
@@ -499,6 +504,28 @@ def count_tbreaks(tbreaks, solutions, logfh=sys.stdout):
         count_blocks.append(part)
         
     return count_blocks
+
+def count_tbreaks_on_branches(tbreaks, solutions, outfile):
+    tbob = {br.name:0 for br in ref.branches}
+    for tb in tbreaks:
+        tbob[tb.branch.name] += 1
+
+    for sol in solutions:
+        prob = 1. / len(sol)
+        for cover in sol:
+            for tb in cover:
+                tbob[tb.branch.name] += prob
+
+    tb_tree = ref.tree.copy()
+    for branch in tb_tree.iter_descendants():
+        branch.dist = tbob[branch.name]
+    tb_tree_scaled = ref.tree.copy()
+    for branch in tb_tree_scaled.iter_descendants():
+        branch.dist = tbob[branch.name] / branch.dist
+
+    tb_tree.write(outfile=outfile+'.nwk')
+    tb_tree_scaled.write(outfile=outfile+'_scaled.nwk')
+    return tb_tree
 
 def estimate_rate(start, end, length, counts, likes, tree_lengths, rates):
     nucleotide_times = [length * tl for tl in tree_lengths]

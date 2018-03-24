@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Standard modules
+import sys
 
 # Nonstandard modules
 import numpy as np
@@ -103,7 +104,7 @@ def plot_break_rate(N, queries, os_tabs,
     uncertain_rate_ax = axes[2]
 
     [paint_reference(ax, i+1, os_tab) for i, os_tab in enumerate(os_tabs)]
-    paint_breaks(ax, uncertain_rate_windows)
+    #paint_breaks(ax, uncertain_rate_windows)
     rate_plot(certain_rate_ax, certain_estimates, certain_rate_windows, N, step=step, label='Certain\nBreak\nRate')
     rate_plot(uncertain_rate_ax, uncertain_estimates, uncertain_rate_windows, N, step=step, label='Uncertain\nBreak\nRate')
 
@@ -165,20 +166,21 @@ def rate_plot(ax, rate_estimates, rate_windows, N, step=7000, label=''):
     window_x = (rate_windows.start + rate_windows.end) / 2
 
     rates = [float(rate) for rate in rate_estimates.columns[5:]]
-    log_rates = np.log10(rates)
-    top = log_rates[-1]
-    log_delta = log_rates[2] - log_rates[1]
-    bottom = log_rates[1] - log_delta
+    #log_rates = np.log10(rates)
+    #top = log_rates[-1]
+    #log_delta = log_rates[2] - log_rates[1]
+    #bottom = log_rates[1] - log_delta
     # enable drawing of estimates that overlap 0 (log10(0) = -inf)
-    rates[0] = bottom
-    log_expectation = np.log10(rate_windows.loc[:, 'E'])
-    log_expectation[log_expectation < bottom] = bottom
+    #rates[0] = bottom
+    #log_expectation = np.log10(rate_windows.loc[:, 'E'])
+    #log_expectation[log_expectation < bottom] = bottom
+    expectation = rate_windows.loc[:, 'E']
+
     
     # Plot likelihood of rates as heat map
-    extent = [0, N, bottom, top]
     likelihoods = rate_estimates.loc[:, rate_estimates.columns[5]:].T#.loc[::-1, :]
     hm_x = rate_estimates['start'].tolist() + [rate_estimates['end'].max()]
-    heatmap = ax.pcolor(hm_x, log_rates, likelihoods, cmap='viridis',
+    heatmap = ax.pcolor(hm_x, rates, likelihoods, cmap='viridis',
                         norm=colors.LogNorm(vmin=1e-10, vmax=1))
 
     legend = label.replace('\n', '')+'_legend'
@@ -189,11 +191,11 @@ def rate_plot(ax, rate_estimates, rate_windows, N, step=7000, label=''):
     plt.close(legendfig)
     
     # Plot expectation as solid line
-    ax.plot(window_x, log_expectation, 'k-', linewidth=2, label='Expected Rate')
+    ax.plot(window_x, expectation, 'k-', linewidth=2, label='Expected Rate')
 
     # legend = ax.legend(loc='upper left')
     ax.set_ylabel(label)
-    ax.set_ylim(bottom, top)
+    ax.set_ylim(0, 0.003) #ax.set_ylim(bottom, top)
     ax.yaxis.grid(which="major", color='k', linestyle='--', linewidth=1)
 
 def window_plot(ax, x, y, label):
@@ -241,7 +243,6 @@ def track_correlation(rate_windows, tracks, track_labels, outfile):
     X = sm.add_constant(tracks[track_labels]) # allow for intercept
     model = sm.OLS(rate_windows.E, X, missing='drop')
     results = model.fit()
-    print(results.summary())
 
     # Modeling each track with linear regression (simple, but most wrong).
     tests = []
@@ -270,4 +271,5 @@ def track_correlation(rate_windows, tracks, track_labels, outfile):
 
     fig.savefig(outfile)
     plt.close(fig)
+    return results
 

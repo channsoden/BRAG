@@ -106,7 +106,54 @@ expressed = flatten(expressed)
 spsp = flatten(spsp)
 alllife = flatten(alllife)
 
-columns = ['start', 'end', 'GC', 'CRI', 'cds_density', 'exon_density', 'N. crassa', 'Cellular Life']
+nspsp = len(spsp)
+nalllife = len(alllife)
+
+n = float(nspsp + nalllife)
+p = nspsp / n
+q = nalllife / n
+
+p2 = p * p * n
+twopq = 2 * p * q * n
+q2 = q * q * n
+
+edges = []
+for i, row in spsp.iterrows():
+    edges.append( (row.start, 'sp') )
+for i, row in alllife.iterrows():
+    edges.append( (row.start, 'life') )
+edges.sort()
+
+neighbors = {'sp': 0, 'different': 0, 'life': 0}
+last = None
+
+for edge in edges:
+    site, level = edge
+    if level != last:
+        neighbors['different'] += 1
+    else:
+        neighbors[level] += 1
+    last = level
+
+print(nspsp, 'sp sp genes')
+print(nalllife, 'conserved genes')
+print(neighbors)
+
+obs = float(sum(neighbors.values()))
+p2_obs = neighbors['sp']
+twopq_obs = neighbors['different']
+q2_obs = neighbors['life']
+
+form = '{}\t{}\t{}'
+print('category\tobserved\texpected')
+print(form.format('p2', p2_obs, p2))
+print(form.format('twopq', twopq_obs, twopq))
+print(form.format('q2', q2_obs, q2))
+
+sys.exit()
+
+
+columns = ['start', 'end', 'GC', 'CRI', 'cds_density', 'exon_density', 'conservation']
 tracks = {column:[] for column in columns}
 for window in windowize(genome):
     seg = genome[slice(*window)]
@@ -117,8 +164,7 @@ for window in windowize(genome):
     tracks['CRI'].append( CRI(seg) )
     tracks['cds_density'].append( gene_density(protein_coding, window) )
     tracks['exon_density'].append( gene_density(expressed, window) )
-    tracks['N. crassa'].append( gene_density(spsp, window) )
-    tracks['Cellular Life'].append( gene_density(alllife, window) )
+    tracks['conservation'].append( 1- gene_density(spsp, window) + gene_density(alllife, window))
 
 tracks = pd.DataFrame(tracks)
 tracks.to_csv('Ncra_extra_tracks.tsv', sep='\t', columns = columns, index=False)
@@ -131,4 +177,4 @@ tracks.to_csv('Ncra_extra_tracks.tsv', sep='\t', columns = columns, index=False)
 tracks['unripped_exon_density'] = tracks.exon_density
 tracks.loc[tracks.CRI > 0, 'unripped_exon_density'] = np.NaN
 
-tracks.to_csv('Ncra_extra_tracks_unique.tsv', sep='\t', columns = ['start', 'end', 'CRI', 'unripped_exon_density'], index=False)
+tracks.to_csv('Ncra_extra_tracks_unique.tsv', sep='\t', columns = ['start', 'end', 'CRI', 'unripped_exon_density', 'conservation'], index=False)
