@@ -20,7 +20,7 @@ def segment_tables(reference, segment_file, seqs_file, reference_genome_file):
         sys.exit('Unable to identify reference in filename: {}'.format(seqs_file))
     else:
         query = query[0]
-    pair = [line.strip() for line in open(seqs_file, 'r')]
+    pair = [line.strip() for line in open(seqs_file, 'r')] 
     ref_first = reference_genome_file in pair[0]
     ref_second = reference_genome_file in pair[1]
     if ref_first == ref_second:
