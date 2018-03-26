@@ -8,7 +8,7 @@ echo "Generating extra tracks of data"
 python extra_tracks.py
 
 echo "Running BRAG"
-../BRAG -t Neurospora.nwk -r Nc -x Sm -o Ncrassa -g alignments/Neurospora.*.os.txt -q alignments/Neurospora.*.seqs -C Neurospora-crassa_v12_fixed_centromeres.txt -T Ncra_extra_tracks.tsv -W 20000 -S 4000
+../BRAG -t brag_set.nwk -r crassa -x F_oxysporum Trichoderma_sp -o Ncrassa -g alignments/brag_set.*.os.txt -q alignments/brag_set.*.seqs -C Neurospora-crassa_v12_fixed_centromeres.txt -T Ncra_extra_tracks.tsv -W 20000 -S 4000
 
 echo "Generating figures from BRAG output"
 python paper_figures.py

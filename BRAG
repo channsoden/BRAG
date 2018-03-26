@@ -96,7 +96,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-t', '--tree', type=str, required=True, help='Newick formatted phylogenetic tree')
     parser.add_argument('-r', '--reference', type=str, required=True, help='Name or abbreviation of genome to use as reference.')
-    parser.add_argument('-x', '--outgroup', type=str, required=True, help='Genome to be used as outgroup for rooting')
+    parser.add_argument('-x', '--outgroup', type=str, nargs='+', help='Genome/s to be used as outgroup for rooting')
     parser.add_argument('-o', '--output', type=str, help='Name stub for output files')
     parser.add_argument('-g', '--segment_files', type=str, nargs='+', help='Pairwise OSFinder alignments to reference')
     parser.add_argument('-q', '--seqs_files', type=str, nargs='+', help='Murasaki generated .seqs files, in same order as --segments')

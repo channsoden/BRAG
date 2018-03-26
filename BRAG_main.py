@@ -31,7 +31,7 @@ def main(tree, reference, outgroup, output, segment_files, seqs_files,
     log.write('Reading input. . .\n')
     
     tree = Tree(tree)
-    root(tree, [outgroup])
+    root(tree, outgroup)
 
     reference_genome_file = infer_reference(seqs_files)
     table_jobs = [(segment_tables, (reference, segment_file, seqs_file, reference_genome_file))
