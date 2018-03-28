@@ -143,36 +143,26 @@ if True:
     for cat, count in new_hist_content.items():
         rate_hists[cat].append( count )
 
-stacked_hist = {}
-categories = categories[::-1]
-last_cat = categories[0]
-stacked_hist[last_cat] = rate_hists[last_cat]
-for cat in categories[1:]:
-    stacked_hist[cat] = [c1+c2 for c1, c2 in zip(rate_hists[cat], stacked_hist[last_cat])]
-    last_cat = cat
-        
+data = [kw_ranks[cat] for cat in categories]
 fig = plt.figure(figsize = (6, 6))
 ax = fig.add_subplot(111)
-last_hist = [0 for x in range(len(rates)-1)]
-for category in categories:
-    hist = stacked_hist[category]
-    ax.fill_between(rates[:-1], last_hist, hist, color=colors[categories.index(category)])
-    max_index = np.argmax(hist)
-    labelx = rates[max_index]
-    labely = (hist[max_index] + last_hist[max_index]) / 2.
-    ax.text(labelx, labely, category, ha='center', va='bottom')
-    last_hist = hist
-ax.set_xscale('log')
+values, bins, patches = ax.hist(data, 30, histtype='bar', stacked=True, label=categories, color=colors)
+label_x = 2400
+last_mean = 0
+for vals, label in zip(values, categories):
+    mean = np.mean(vals)
+    label_y = (mean + last_mean) / 2
+    last_mean = mean
+    ax.text(label_x, label_y, label, ha='center', va='bottom')
+#ax.legend()
 ax.set_ylabel('Genes')
-ax.set_xlabel('Break Rate')
+ax.set_xlabel('Break Rate Rank')
+ax.invert_xaxis()
 fig.savefig('core_genes_2.png', dpi=350)
-
 
 print('Kruskal-Wallis test for equal distributions')
 kw_result = stats.kruskal(*kw_ranks.values())
 print(kw_result)
 for category in categories:
     print('{} mean rank:\t{}'.format(category, np.mean(kw_ranks[category])))
-
-    
 
