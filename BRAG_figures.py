@@ -211,7 +211,7 @@ def correlation_scatter(x1, x2, outfile):
     ax = fig.add_subplot(111)
     test = regression_plot(x2, y)
     test.regress()
-    test.draw(ax, logx=True, fit_report_location = (0.05, 0.05))
+    test.draw(ax, logx=True, fit_report_location = (0.05, 0.05), plot_regression=False)
 
     ax.set_ylabel('br(True) / br(True U False)')
     ax.set_xlabel('log( br(True U False) )')
@@ -267,7 +267,7 @@ def track_correlation(rate_windows, tracks, track_labels, outfile):
     axes = [fig.add_subplot(gs[x]) for x in range(nplots)]
 
     for ax, test in zip(axes, tests):
-        test.draw(ax, logy = True, fit_report_location = (0.05, 0.05), marker_alpha=0.1)
+        test.draw(ax, logy = True, fit_report_location = (0.05, 0.05), marker_alpha=0.1, sig_color='g')
 
     fig.savefig(outfile)
     plt.close(fig)

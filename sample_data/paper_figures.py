@@ -12,7 +12,7 @@ from plotting_tools import direct_labels
 from BRAG_parsers import scaffold_table
 from gff_tools import gff_table
 
-def telomere_correlations(dataset, chromosomes, datalabel):
+def telomere_correlations(dataset, chromosomes, datalabel, slope='negative'):
     dataset['midpoint'] = (dataset.start + dataset.end) / 2.
     tests = []
     for chr_num, coordinates in enumerate(chromosomes):
@@ -24,11 +24,11 @@ def telomere_correlations(dataset, chromosomes, datalabel):
 
         # left arm works from left to right
         ltest = regression_plot(larm.midpoint - lstart, larm[datalabel], label=label+'left')
-        ltest.regress(slope = 'negative')
+        ltest.regress(slope = slope)
         tests.append(ltest)
         # right arm works from right to left
         rtest = regression_plot(rend - rarm.midpoint, rarm[datalabel], label=label+'right')
-        rtest.regress(slope = 'negative')
+        rtest.regress(slope = slope)
         tests.append(rtest)
     return tests
 
@@ -182,10 +182,10 @@ print('pval', pval)
 print('dof', dof)
 print()
 
-def multitest(df, chromosomes, track):
+def multitest(df, chromosomes, track, slope='negative'):
     print('correlating {} with distance to telomere'.format(track))
     # is break rate correlated with distance to telomere?
-    tests = telomere_correlations(df, chromosomes, track)
+    tests = telomere_correlations(df, chromosomes, track, slope=slope)
     
     # multiple testing correction for testing each chromosome arm independently
     # use 'fdr_tsbh' for two stage fdr correction via Benjamini/Hochberg method
@@ -219,7 +219,7 @@ def grid_plots(tests, outfile, logy=True):
     axes = [fig.add_subplot(gs[x]) for x in range(nplots)]
 
     for ax, test in zip(axes, tests):
-        test.draw(ax, logy = logy, fit_report_location = (0.05, 0.05))
+        test.draw(ax, logy = logy, sig_color='g', fit_report_location = (0.05, 0.05))
     fig.savefig(outfile, dpi=350)
     plt.close(fig)
 
@@ -229,5 +229,5 @@ grid_plots(tests, 'brag_correlations')
 extra_tracks = pd.read_csv('Ncra_extra_tracks.tsv', sep='\t', header=0)
 tests = multitest(extra_tracks, chromosomes, 'CRI')
 grid_plots(tests, 'CRI_correlations', logy=False)
-tests = multitest(extra_tracks, chromosomes, 'conservation')
+tests = multitest(extra_tracks, chromosomes, 'conservation', slope='positive')
 grid_plots(tests, 'species_specific_genes_telomeres', logy=False)

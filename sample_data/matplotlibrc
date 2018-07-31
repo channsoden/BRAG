@@ -11,7 +11,7 @@ backend      : Agg
 
 # the default savefig params can be different from the display params
 # background white
-savefig.dpi         : 200     # figure dots per inch or 'figure'
+savefig.dpi         : 350     # figure dots per inch or 'figure'
 savefig.facecolor   : white    # figure facecolor when saving
 savefig.edgecolor   : white    # figure edgecolor when saving
 savefig.format      : png      # png, ps, pdf, svg
