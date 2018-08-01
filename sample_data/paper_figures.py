@@ -5,6 +5,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 from scipy import stats
+# Suppress FutureWarning upon importing pandas.core.datetools in statsmodels
+np.warnings.filterwarnings("ignore", category=FutureWarning)
 import statsmodels.stats.multitest as smm
 
 from plots import regression_plot, pretty_bar

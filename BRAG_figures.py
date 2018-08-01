@@ -4,6 +4,8 @@ import sys
 
 # Nonstandard modules
 import numpy as np
+# Suppress FutureWarning upon importing pandas.core.datetools in statsmodels
+np.warnings.filterwarnings("ignore", category=FutureWarning)
 import statsmodels.api as sm
 import statsmodels.stats.multitest as smm
 from matplotlib import pyplot as plt

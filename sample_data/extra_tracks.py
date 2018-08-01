@@ -135,9 +135,13 @@ for edge in edges:
         neighbors[level] += 1
     last = level
 
-print(nspsp, 'sp sp genes')
+print(nspsp, 'species specific genes')
 print(nalllife, 'conserved genes')
-print(neighbors)
+
+print("Are species specific and conserved genes more likely to be neighbors with the same type, or randomly distributed?")
+print('p2 = species specific neighbors')
+print('twopq = species specific/conserved neighbors')
+print('q2 = conserved neighbors')
 
 obs = float(sum(neighbors.values()))
 p2_obs = neighbors['sp']
