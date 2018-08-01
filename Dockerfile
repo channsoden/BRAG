@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3
+FROM python:3.6.4
 
 # Create BRAG directory
 RUN mkdir /home/BRAG
