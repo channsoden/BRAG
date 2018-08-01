@@ -1,7 +1,7 @@
 # Download genomes from Open Science Framework
 echo "Downloading genomes"
-#wget -O genomes.tar.gz https://osf.io/vmkc8/?action=download
-#tar -xzf genomes.tar.gz
+wget -O genomes.tar.gz https://osf.io/n3rcw/download
+tar -xzf genomes.tar.gz
 echo
 
 export PYTHONPATH=$PYTHONPATH:../hannsoden-bioinformatics:..
