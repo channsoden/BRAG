@@ -154,9 +154,6 @@ print(form.format('p2', p2_obs, p2))
 print(form.format('twopq', twopq_obs, twopq))
 print(form.format('q2', q2_obs, q2))
 
-sys.exit()
-
-
 columns = ['start', 'end', 'GC', 'CRI', 'cds_density', 'exon_density', 'conservation']
 tracks = {column:[] for column in columns}
 for window in windowize(genome):
