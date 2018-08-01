@@ -1,6 +1,41 @@
-# BRAG [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/channsoden/BRAG/master)
+# BRAG
 
 Break Rates Across the Genome (BRAG) is a program to estimate the rearrangement break rate at all sites of a genome, given a tree of relatives and pairwise alignments between the genome of interest (the reference) and all other leaves in the tree.
+
+## Requirements
+
+In addition to Python3, BRAG requires the following Python modules:
+
+- numpy  
+- pandas  
+- scipy  
+- statsmodels  
+- ete3  
+- matplotlib  
+- biopython  
+
+BRAG should be run on a machine with at least 16 GB of memory.
+
+## Running BRAG with Docker
+
+A docker image for BRAG is hosted on https://hub.docker.com/r/channsoden/brag/. You can use this image to run the sample analysis with:
+
+```docker run channsoden/brag```
+
+After the sample analysis has run you can copy the results out with:
+
+```docker cp [container_name]:/home/BRAG/sample_data/results .```
+
+Where [container_name] is the binomial tag generated for your container, viewed by:
+
+```docker container ls -a```
+
+Or you can use this image interactively to run your own analysis with:
+
+```docker run -it channsoden/brag bash```
+
+Consult the Docker documentation to mount filesystem directories on the container to get your data in/out: https://docs.docker.com/storage/bind-mounts/
+
 
 ## Usage
 
@@ -66,8 +101,5 @@ To run the sample analysis, from the sample_data directory, simply run:
 bash sample_analysis.sh
 ```
 
-This analysis can be run on MyBinder.org from your browser at the following link:
-
-https://mybinder.org/v2/gh/channsoden/BRAG/master
-
+This script will download (220 MB) and extract (710 MB) the genomes used in the BRAG paper, then recreate all figures and statistics from the paper. Running the analysis requires at least 8 GB memory.
 
