@@ -1,3 +1,10 @@
+# This will recreate the figures from the BRAG Paper.
+# This analysis uses a few working-names for species that were changed by the time of publication.
+# western_mountain = N. sierra
+# alaska = N. glassae
+# LNF6-4 = FGSC????
+# discreta_Olivares = N. discreta sp. FGSC
+
 # Download genomes from Open Science Framework
 echo "Downloading genomes"
 wget -O genomes.tar.gz https://osf.io/n3rcw/download
