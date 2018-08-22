@@ -2,8 +2,8 @@
 # This analysis uses a few working-names for species that were changed by the time of publication.
 # western_mountain = N. sierra
 # alaska = N. glassae
-# LNF6-4 = FGSC????
-# discreta_Olivares = N. discreta sp. FGSC
+# LNF6-4 = FGSC26633
+# discreta_Olivares = N. discreta FGSC26659
 
 # Download genomes from Open Science Framework
 echo "Downloading genomes"
