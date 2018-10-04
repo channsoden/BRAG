@@ -2,6 +2,8 @@
 
 Break Rates Across the Genome (BRAG) is a program to estimate the rearrangement break rate at all sites of a genome, given a tree of relatives and pairwise alignments between the genome of interest (the reference) and all other leaves in the tree.
 
+Also see the OSF Project page for the BRAG paper: https://osf.io/ak54t/
+
 ## Requirements
 
 In addition to Python3, BRAG requires the following Python modules:
